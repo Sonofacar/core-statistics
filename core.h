@@ -3,22 +3,29 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 // Creating a linear model
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 
-typedef struct dataColumn {
-	char * name;
-	gsl_vector * vector;
-	struct dataColumn * nextColumn;
-} dataColumn;
-
 typedef struct rowValue {
 	char * value;
 	struct rowValue * nextValue;
 } rowValue;
+
+typedef enum {
+	TYPE_DOUBLE,
+	TYPE_STRING
+} valueType;
+
+typedef struct dataColumn {
+	char * name;
+	valueType type;
+	gsl_vector * vector;
+	struct dataColumn * nextColumn;
+} dataColumn;
 
 typedef struct {
 	dataColumn * columnHead;
@@ -31,6 +38,33 @@ typedef struct {
 	double * chisq;			// model chi-squared value
 	gsl_multifit_linear_workspace * work;
 } multiLinearModel;
+
+valueType detect_type(const char *value) {
+	bool has_dot = false;
+	bool has_digit = false;
+	const char *p = value;
+
+	// Skip leading whitespaces
+	while (isspace(*p)) p++;
+
+	// Optional sign
+	if (*p == '+' || *p == '-') p++;
+
+	while (*p) {
+		if (isdigit(*p)) {
+			has_digit = true;
+		} else if (*p == '.') {
+			if (has_dot) return TYPE_STRING; // multiple dots = string
+			has_dot = true;
+		} else {
+			return TYPE_STRING;
+		}
+		p++;
+	}
+
+	if (!has_digit) return TYPE_STRING;
+	return TYPE_DOUBLE;
+}
 
 int process_row(dataColumn * data, size_t n, int row, char * line,
 		bool is_header)
@@ -87,6 +121,15 @@ int process_row(dataColumn * data, size_t n, int row, char * line,
 		ncol = 0;
 
 		while (rowHead) {
+			if (colHead->type) {
+				if (colHead->type ==
+					detect_type(rowHead->value)) {
+					perror("Mismatch in column types.");
+				}
+			} else {
+				colHead->type = detect_type(rowHead->value);
+			}
+
 			sscanf(rowHead->value, "%lf", &value);
 			gsl_vector_set(colHead->vector, row - 1, value);
 			colHead = colHead->nextColumn;
