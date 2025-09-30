@@ -1,4 +1,5 @@
 #include <gsl/gsl_multifit.h>
+#include <unistd.h>
 #include "core.h"
 
 // dataColumn * columnHead;
@@ -11,8 +12,9 @@
 // double * chisq;
 // gsl_multifit_linear_workspace * work;
 
-int main()
+int main(int argc, char *argv[])
 {
+	int opt;
 	int status;
 	int nrow;
 	int ncol;
@@ -25,6 +27,27 @@ int main()
 	gsl_matrix * covMatrix;
 	double chisq;
 	gsl_multifit_linear_workspace * work;
+
+	while ((opt = getopt(argc, argv, ":h")) != -1) {
+		switch(opt) {
+			case 'h':
+				printf("Usage: lm OPTIONS\n");
+				printf("Collection of tools making it possible"
+						"to wrangle and model data"
+						"from the command line.\n");
+				printf("\n");
+				printf("OPTIONS:\n");
+				printf("\t-h\tPrint this help message\n");
+				return 1;
+				break;
+
+			case '?':
+				fprintf(stderr, "Unknown option: %c\n",
+						optopt);
+				return 1;
+				break;
+		}
+	}
 
 	// Parse incoming csv file
 	status = read_table(&columnHead, &dataMatrix, &response);
