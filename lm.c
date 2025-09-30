@@ -2,16 +2,6 @@
 #include <unistd.h>
 #include "core.h"
 
-// dataColumn * columnHead;
-// gsl_vector * response;
-// gsl_vector * fit;
-// gsl_vector * residuals;
-// gsl_vector * coef;
-// gsl_matrix * dataMatrix;
-// gsl_matrix * covMatrix;
-// double * chisq;
-// gsl_multifit_linear_workspace * work;
-
 int main(int argc, char *argv[])
 {
 	int opt;
