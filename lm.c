@@ -5,6 +5,7 @@
 int main(int argc, char *argv[])
 {
 	int opt;
+	encodeType encoding = ENCODE_NONE;
 	int status;
 	int nrow;
 	int ncol;
@@ -18,8 +19,18 @@ int main(int argc, char *argv[])
 	double chisq;
 	gsl_multifit_linear_workspace * work;
 
-	while ((opt = getopt(argc, argv, ":h")) != -1) {
+	while ((opt = getopt(argc, argv, ":hd")) != -1) {
 		switch(opt) {
+			case 'd':
+				if (encoding == ENCODE_NONE) {
+					encoding = ENCODE_DUMMY;
+				} else {
+					fprintf(stderr, "Multiple types of"
+						"encoding specified\n");
+					return 1;
+				}
+				break;
+
 			case 'h':
 				printf("Usage: lm OPTIONS\n");
 				printf("Collection of tools making it possible"
@@ -40,7 +51,9 @@ int main(int argc, char *argv[])
 	}
 
 	// Parse incoming csv file
-	status = read_table(&columnHead, &dataMatrix, &response);
+	status = read_table(&columnHead, &dataMatrix, &response, encoding);
+
+	// gsl_matrix_fprintf(stdout, dataMatrix, "%g");
 
 	// Extract data size
 	nrow = dataMatrix->size1;

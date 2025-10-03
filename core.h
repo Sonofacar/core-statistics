@@ -20,10 +20,16 @@ typedef enum {
 	TYPE_STRING
 } valueType;
 
+typedef enum {
+	ENCODE_NONE,
+	ENCODE_DUMMY
+} encodeType;
+
 typedef struct dataColumn {
 	char * name;
 	valueType type;
 	gsl_vector * vector;
+	char ** to_encode;
 	struct dataColumn * nextColumn;
 } dataColumn;
 
@@ -66,6 +72,32 @@ valueType detect_type(const char *value) {
 	return TYPE_DOUBLE;
 }
 
+void translate_row_value(rowValue * row, dataColumn * column, int n)
+{
+	double value;
+
+	if (n == 1) {
+		column->type = detect_type(row->value);
+
+		if (column->type == TYPE_STRING) {
+			gsl_vector_free(column->vector);
+		}
+	}
+
+	if (column->type != detect_type(row->value)) {
+		perror("Mismatch in column types.");
+	}
+
+	if (column->type == TYPE_DOUBLE) {
+		sscanf(row->value, "%lf", &value);
+		gsl_vector_set(column->vector, n - 1, value);
+	} else {
+		column->to_encode = realloc(column->to_encode,
+				sizeof(char *) * n);
+		column->to_encode[n - 1] = strdup(row->value);
+	}
+}
+
 int process_row(dataColumn * data, size_t n, int row, char * line,
 		bool is_header)
 {
@@ -73,8 +105,7 @@ int process_row(dataColumn * data, size_t n, int row, char * line,
 	rowValue * values;
 	rowValue * rowHead = values;
 	char * raw;
-	double value;
-	int ncol;
+	int ncol = 0;
 
 	// Get first value in row
 	values = malloc(sizeof(rowValue));
@@ -102,15 +133,13 @@ int process_row(dataColumn * data, size_t n, int row, char * line,
 	// Decide what to do with the data
 	rowHead = values;
 	if (is_header) {
-		ncol = 0;
-
-		colHead->name = rowHead->value;
+		colHead->name = strdup(rowHead->value);
 		colHead->vector = gsl_vector_calloc(n);
 		rowHead = rowHead->nextValue;
 		while (rowHead) {
 			colHead->nextColumn = malloc(sizeof(dataColumn));
 			colHead = colHead->nextColumn;
-			colHead->name = rowHead->value;
+			colHead->name = strdup(rowHead->value);
 			colHead->vector = gsl_vector_calloc(n);
 			rowHead = rowHead->nextValue;
 
@@ -121,17 +150,8 @@ int process_row(dataColumn * data, size_t n, int row, char * line,
 		ncol = 0;
 
 		while (rowHead) {
-			if (colHead->type) {
-				if (colHead->type ==
-					detect_type(rowHead->value)) {
-					perror("Mismatch in column types.");
-				}
-			} else {
-				colHead->type = detect_type(rowHead->value);
-			}
+			translate_row_value(rowHead, colHead, row);
 
-			sscanf(rowHead->value, "%lf", &value);
-			gsl_vector_set(colHead->vector, row - 1, value);
 			colHead = colHead->nextColumn;
 			rowHead = rowHead->nextValue;
 			
@@ -152,7 +172,108 @@ int process_row(dataColumn * data, size_t n, int row, char * line,
 	return ncol;
 }
 
-int read_table(dataColumn ** columnHead, gsl_matrix ** dataMatrix, gsl_vector ** response)
+int compare_items(const void * x, const void * y)
+{
+	const char * str1 = *(const char **) x;
+	const char * str2 = *(const char **) y;
+	return strcmp(str1, str2);
+}
+
+size_t unique_categories(char ** column, int n, char *** dest)
+{
+	size_t output = 0;
+	char ** sorted;
+
+	// Copy strings
+	for (int i = 0; i < n; i++) {
+		sorted[i] = strdup(column[i]);
+	}
+
+	// Sort values
+	qsort(sorted, n, sizeof(char *), compare_items);
+
+	// Pull out distinct values
+	*dest = malloc(n * sizeof(char *));
+	for (int i = 0; i < n; i++) {
+		if (i == 0 || strcmp(sorted[i], sorted[i - 1])) {
+			(*dest)[output++] = strdup(sorted[i]);
+		}
+	}
+
+	return output;
+}
+
+int dummy_encode(dataColumn * data, int nrow)
+{
+	char ** categories;
+	dataColumn * head;
+	dataColumn * remaining;
+	char * name = data->name;
+	size_t ncat;
+	double value;
+	int newCols = 0;
+
+	// Save link to remaining data
+	remaining = data->nextColumn;
+
+	// Find all categories
+	ncat = unique_categories(data->to_encode, nrow, &categories);
+
+	// Construct new columns
+	head = data;
+	for (int i = 0; i < ncat; i++) {
+		if (i != 0) {
+			head->nextColumn = malloc(sizeof(dataColumn));
+			head = head->nextColumn;
+			newCols++;
+		}
+
+		head->name = strdup(name);
+		strcat(head->name, "_");
+		strcat(head->name, categories[i]);
+		head->type = TYPE_DOUBLE;
+
+		// Set vector
+		head->vector = gsl_vector_calloc(nrow);
+		for (int j = 0; j < nrow; j++) {
+			if (strcmp(data->to_encode[j], categories[i]) == 0) {
+				value = 1;
+			} else {
+				value = 0;
+			}
+			gsl_vector_set(head->vector, j, value);
+		}
+	}
+
+	// Link back to what remains of original data
+	head->nextColumn = remaining;
+
+	// Adjust down 1 because we replaced one column, and we didn't add one
+	// for one category, thus we adjust down by one.
+	newCols--;
+
+	return newCols;
+}
+
+int encode(dataColumn * data, gsl_vector * response, int nrow,
+		encodeType encoding)
+{
+	int newCols = 0;
+
+	dataColumn * newData;
+	switch (encoding) {
+		case ENCODE_DUMMY:
+			newCols = dummy_encode(data, nrow);
+			break;
+		default:
+			perror("Unknown encoding type, ignoring categories");
+	}
+
+	return newCols;
+}
+
+int read_table(dataColumn ** columnHead, gsl_matrix ** dataMatrix,
+		gsl_vector ** response, encodeType encoding)
 {
 	char * line = NULL;
 	char ** lines = NULL;
@@ -160,11 +281,10 @@ int read_table(dataColumn ** columnHead, gsl_matrix ** dataMatrix, gsl_vector **
 	char * p;
 	int nrow = 0;
 	int ncol = 0;
+	int addedCols = 0;
 	int capacity = 0;
 	int status;
 	dataColumn * colHead;
-	// gsl_vector * intercept;
-	char * intercept = "intercept,";
 	bool first = true;
 
 	// Allocate memory for data
@@ -215,17 +335,32 @@ int read_table(dataColumn ** columnHead, gsl_matrix ** dataMatrix, gsl_vector **
 			perror("Inconsistent number of columns.");
 			return 1;
 		}
+
+		free(lines[i]);
 	}
 
 	// Set up output matrix
 	*response = gsl_vector_calloc(nrow);
-	*dataMatrix = gsl_matrix_calloc(nrow, ncol);
 
 	// Set the first column as the response vector
+	colHead = (*columnHead);
 	status = gsl_vector_memcpy(*response, colHead->vector);
-	colHead = colHead->nextColumn;
 
-	// Putt all other rows in the data matrix
+	// Encode categorical variables
+	colHead = *columnHead;
+	while (colHead) {
+		if (colHead->to_encode) {
+			addedCols = encode(colHead, *response, nrow, encoding);
+		}
+		colHead = colHead->nextColumn;
+	}
+
+	// Add new columns and allocate data matrix
+	ncol = ncol + addedCols;
+	*dataMatrix = gsl_matrix_calloc(nrow, ncol);
+
+	// Put all other rows in the data matrix
+	colHead = (*columnHead)->nextColumn;
 	for (size_t i = 0; i < ncol; i++) {
 		status = gsl_matrix_set_col(*dataMatrix, i, colHead->vector);
 

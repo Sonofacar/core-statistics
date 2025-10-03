@@ -26,6 +26,8 @@ To-do list:
                 - predictions
         - [ ] train/test sets?
         - [ ] transformation of response variable
-        - [ ] target/dummy encode categories
+        - encode categories
+		- [X] dummy encoding
+		- [ ] target encoding
     - [ ] Dynamically handle long matrices
 - [ ] plm (penalized linear regression)
