@@ -59,6 +59,13 @@ int main(int argc, char *argv[])
 	nrow = dataMatrix->size1;
 	ncol = dataMatrix->size2;
 
+	// We cannot make a model with more columns than rows
+	if (nrow < ncol) {
+		fprintf(stderr, "More columns than rows; remove columns or"
+				"change encoding method.\n");
+		exit(EXIT_FAILURE);
+	}
+
 	// Allocate remaining data
 	work = gsl_multifit_linear_alloc(nrow, ncol);
 	coef = gsl_vector_calloc(ncol);
