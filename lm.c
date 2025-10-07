@@ -6,6 +6,7 @@ int main(int argc, char *argv[])
 {
 	int opt;
 	encodeType encoding = ENCODE_NONE;
+	transformType responseTransform = TRANSFORM_NONE;
 	int status;
 	int nrow;
 	int ncol;
@@ -19,7 +20,7 @@ int main(int argc, char *argv[])
 	double chisq;
 	gsl_multifit_linear_workspace * work;
 
-	while ((opt = getopt(argc, argv, ":hd")) != -1) {
+	while ((opt = getopt(argc, argv, ":hdlL")) != -1) {
 		switch(opt) {
 			case 'd':
 				if (encoding == ENCODE_NONE) {
@@ -33,13 +34,37 @@ int main(int argc, char *argv[])
 
 			case 'h':
 				printf("Usage: lm OPTIONS\n");
-				printf("Collection of tools making it possible"
-						"to wrangle and model data"
-						"from the command line.\n");
+				printf("Perform linear regression from the"
+						"command line.\n");
 				printf("\n");
 				printf("OPTIONS:\n");
+				printf("\t-l\tLog transform response"
+						"variable\n");
+				printf("\t-L\tLog transform response variable"
+					"with offset (to allow for 0 values)\n");
 				printf("\t-h\tPrint this help message\n");
 				return 1;
+				break;
+
+			case 'l':
+				if (responseTransform  == TRANSFORM_NONE) {
+					responseTransform = TRANSFORM_LOG;
+				} else {
+					fprintf(stderr, "Multiple"
+						"transformations specified\n");
+					return 1;
+				}
+				break;
+
+			case 'L':
+				if (responseTransform  == TRANSFORM_NONE) {
+					responseTransform =
+						TRANSFORM_LOG_OFFSET;
+				} else {
+					fprintf(stderr, "Multiple"
+						"transformations specified\n");
+					return 1;
+				}
 				break;
 
 			case '?':
@@ -70,6 +95,16 @@ int main(int argc, char *argv[])
 	work = gsl_multifit_linear_alloc(nrow, ncol);
 	coef = gsl_vector_calloc(ncol);
 	covMatrix = gsl_matrix_calloc(ncol, ncol);
+
+	switch(responseTransform) {
+		case TRANSFORM_LOG:
+			transform(response, log, nrow);
+			break;
+
+		case TRANSFORM_LOG_OFFSET:
+			transform(response, log_offset, nrow);
+			break;
+	}
 
 	gsl_multifit_linear(dataMatrix, response, coef, covMatrix, &chisq,
 		     work);

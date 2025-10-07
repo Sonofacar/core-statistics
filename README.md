@@ -11,23 +11,24 @@ command line. They rely on the GNU Scientific Library being present on the
 system this is to be installed on for purposes of modeling.
 
 To-do list:
-- [ ] Parse a CSV from stdin
-    - [X] Read column names
-    - [X] Interpret numeric values
-    - [ ] Interpret character values (as categories)
+- [X] Parse a CSV from stdin
+	- [X] Read column names
+	- [X] Interpret numeric values
+	- [X] Interpret character values (as categories)
+		- encode categories
+			- [X] dummy encoding
+			- [ ] target encoding
 - [ ] lm (linear model)
-    - [X] Create a useful linear model
-    - [ ] Create command line options
-        - [ ] Dynamic output
-            - [ ] Decide how to output:
-                - residuals/stderr
-                - coefficients
-                - model diagnostics
-                - predictions
-        - [ ] train/test sets?
-        - [ ] transformation of response variable
-        - encode categories
-		- [X] dummy encoding
-		- [ ] target encoding
-    - [ ] Dynamically handle long matrices
+	- [X] Create a useful linear model
+	- [ ] Create command line options
+		- [ ] Dynamic output
+			- [ ] Decide how to output:
+				- residuals/stderr
+				- coefficients
+				- model diagnostics
+				- predictions
+		- [ ] train/test sets?
+		- [X] transformation of response variable
+		- [X] category encoding type
+	- [ ] Dynamically handle long matrices
 - [ ] plm (penalized linear regression)

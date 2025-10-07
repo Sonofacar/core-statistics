@@ -10,6 +10,12 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 
+// Other math functions
+#include <math.h>
+
+// Offset for transformations
+#define OFFSET 0.01
+
 typedef struct rowValue {
 	char * value;
 	struct rowValue * nextValue;
@@ -24,6 +30,12 @@ typedef enum {
 	ENCODE_NONE,
 	ENCODE_DUMMY
 } encodeType;
+
+typedef enum {
+	TRANSFORM_NONE,
+	TRANSFORM_LOG,
+	TRANSFORM_LOG_OFFSET
+} transformType;
 
 typedef struct dataColumn {
 	char * name;
@@ -270,6 +282,26 @@ int encode(dataColumn * data, gsl_vector * response, int nrow,
 	}
 
 	return newCols;
+}
+
+double log_offset(double d)
+{
+	return log(d + OFFSET);
+}
+
+double exp_offset(double d)
+{
+	return exp(d) - OFFSET;
+}
+
+void transform(gsl_vector * v, double (*func)(double), int len)
+{
+	double * p;
+
+	for (int i = 0; i < len; i++) {
+		p = gsl_vector_ptr(v, i);
+		*p = (*func)(*p);
+	}
 }
 
 int read_table(dataColumn ** columnHead, gsl_matrix ** dataMatrix,
