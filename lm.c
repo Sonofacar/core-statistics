@@ -1,12 +1,29 @@
 #include <gsl/gsl_multifit.h>
 #include <unistd.h>
+#include <getopt.h>
 #include "core.h"
+
+// Field 2:
+// no_argument: 0
+// required_argument: 1
+// optional_argument: 2
+static struct option longOptions[] = {
+	{"help", 0, NULL, 'h'},
+	{"dummy", 0, NULL, 'd'},
+	{"log", 0, NULL, 'l'},
+	{"log-offset", 0, NULL, 'L'},
+	{"name", 1, NULL, 'n'}
+};
 
 int main(int argc, char *argv[])
 {
+	// Command line options
 	int opt;
 	encodeType encoding = ENCODE_NONE;
 	transformType responseTransform = TRANSFORM_NONE;
+	char * name;
+
+	// Model variables
 	int status;
 	int nrow;
 	int ncol;
@@ -20,29 +37,35 @@ int main(int argc, char *argv[])
 	double chisq;
 	gsl_multifit_linear_workspace * work;
 
-	while ((opt = getopt(argc, argv, ":hdlL")) != -1) {
+	while ((opt = getopt_long_only(argc, argv, ":hdlLn:",
+		longOptions, NULL)) != -1) {
 		switch(opt) {
 			case 'd':
 				if (encoding == ENCODE_NONE) {
 					encoding = ENCODE_DUMMY;
 				} else {
-					fprintf(stderr, "Multiple types of"
+					fprintf(stderr, "Multiple types of "
 						"encoding specified\n");
 					return 1;
 				}
 				break;
 
 			case 'h':
-				printf("Usage: lm OPTIONS\n");
-				printf("Perform linear regression from the"
+				printf("Usage: lm [-h] [-d] [-l] [-L] "
+					"[-n name]\n");
+				printf("Perform linear regression from the "
 						"command line.\n");
 				printf("\n");
 				printf("OPTIONS:\n");
-				printf("\t-l\tLog transform response"
+				printf("\t-d,--dummy\tDummy encode categorical"
+						"variables\n");
+				printf("\t-l,--log\tLog transform response "
 						"variable\n");
-				printf("\t-L\tLog transform response variable"
-					"with offset (to allow for 0 values)\n");
-				printf("\t-h\tPrint this help message\n");
+				printf("\t-L,--log-offset\tLog transform "
+					"response variable with offset (to "
+					"allow for\n");
+				printf("\t\t\t0 values)\n");
+				printf("\t-h,--help\tPrint this help message\n");
 				return 1;
 				break;
 
@@ -65,6 +88,10 @@ int main(int argc, char *argv[])
 						"transformations specified\n");
 					return 1;
 				}
+				break;
+
+			case 'n':
+				name = strdup(optarg);
 				break;
 
 			case '?':
