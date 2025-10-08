@@ -10,6 +10,10 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 
+// Random Variable Distributions
+// #include <gsl/gsl_randist.h>
+#include <gsl/gsl_cdf.h>
+
 // Other math functions
 #include <math.h>
 
@@ -197,6 +201,7 @@ size_t unique_categories(char ** column, int n, char *** dest)
 	char ** sorted;
 
 	// Copy strings
+	sorted = malloc(n * sizeof(char *));
 	for (int i = 0; i < n; i++) {
 		sorted[i] = strdup(column[i]);
 	}
@@ -211,6 +216,8 @@ size_t unique_categories(char ** column, int n, char *** dest)
 			(*dest)[output++] = strdup(sorted[i]);
 		}
 	}
+
+	free(sorted);
 
 	return output;
 }
@@ -233,7 +240,7 @@ int dummy_encode(dataColumn * data, int nrow)
 
 	// Construct new columns
 	head = data;
-	for (int i = 0; i < ncat; i++) {
+	for (int i = 0; i < ncat - 1; i++) {
 		if (i != 0) {
 			head->nextColumn = malloc(sizeof(dataColumn));
 			head = head->nextColumn;
@@ -260,10 +267,6 @@ int dummy_encode(dataColumn * data, int nrow)
 	// Link back to what remains of original data
 	head->nextColumn = remaining;
 
-	// Adjust down 1 because we replaced one column, and we didn't add one
-	// for one category, thus we adjust down by one.
-	newCols--;
-
 	return newCols;
 }
 
@@ -282,26 +285,6 @@ int encode(dataColumn * data, gsl_vector * response, int nrow,
 	}
 
 	return newCols;
-}
-
-double log_offset(double d)
-{
-	return log(d + OFFSET);
-}
-
-double exp_offset(double d)
-{
-	return exp(d) - OFFSET;
-}
-
-void transform(gsl_vector * v, double (*func)(double), int len)
-{
-	double * p;
-
-	for (int i = 0; i < len; i++) {
-		p = gsl_vector_ptr(v, i);
-		*p = (*func)(*p);
-	}
 }
 
 int read_table(dataColumn ** columnHead, gsl_matrix ** dataMatrix,
@@ -326,7 +309,7 @@ int read_table(dataColumn ** columnHead, gsl_matrix ** dataMatrix,
 	while (getline(&line, &len, stdin) != -1) {
 		// Reallocate if more memory is needed
 		if (nrow >= capacity) {
-			capacity = capacity == 0 ? 1 : capacity * 2;
+			capacity = capacity == 0 ? 1 : capacity + sizeof(char *);
 			lines = realloc(lines, capacity * sizeof(char *));
 			if (!lines) {
 				perror("Memory allocation failed");
@@ -409,4 +392,75 @@ int read_table(dataColumn ** columnHead, gsl_matrix ** dataMatrix,
 	free(lines);
 
 	return 0;
+}
+
+double log_offset(double d)
+{
+	return log(d + OFFSET);
+}
+
+double exp_offset(double d)
+{
+	return exp(d) - OFFSET;
+}
+
+void transform(gsl_vector * v, double (*func)(double), int len)
+{
+	double * p;
+
+	for (int i = 0; i < len; i++) {
+		p = gsl_vector_ptr(v, i);
+		*p = (*func)(*p);
+	}
+}
+
+void coefficient_p_values(gsl_vector * pVals, gsl_matrix * varCovar,
+		gsl_vector * coef, int n, int df)
+{
+	double se;
+	double c;
+	double t;
+	double upper;
+	double lower;
+
+	for (int i = 0; i < n; i++) {
+		se = gsl_matrix_get(varCovar, i, i);
+		c = gsl_vector_get(coef, i);
+		t = fabs(c / se);
+		lower = gsl_cdf_tdist_P(-t, df);
+		upper = gsl_cdf_tdist_Q(t, df);
+		gsl_vector_set(pVals, i, lower + upper);
+	}
+}
+
+void summarize_model(gsl_vector * coef, gsl_vector * pVals, char ** names,
+		int ncol, double RSQ, double adjRSQ, double fStat, double AIC,
+		double BIC)
+{
+	// print coefficients
+	// coefficient VIF
+	printf("Coefficients:\n");
+	printf("%17.17s\tValue\t\tP-Value\n", "Name");
+	for (int i = 0; i < ncol; i++) {
+		printf("%17.17s\t", names[i]);
+		printf("%9.9g\t", gsl_vector_get(coef, i));
+		printf("%9.9g\n", gsl_vector_get(pVals, i));
+	}
+	printf("\n");
+
+	// R-squared and adjusted R-squared
+	printf("Model Diagnostics:\n");
+	printf("\tR-squared: %g\n", RSQ);
+	printf("\tAdjusted R-squared: %g\n", adjRSQ);
+
+	// F statistic
+	printf("\tF-statistic: %g\n", fStat);
+
+	// AIC/BIC
+	printf("\tAIC: %g\n", AIC);
+	printf("\tBIC: %g\n", BIC);
+}
+
+void output_model()
+{
 }

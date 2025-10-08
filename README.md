@@ -21,14 +21,11 @@ To-do list:
 - [ ] lm (linear model)
 	- [X] Create a useful linear model
 	- [ ] Create command line options
-		- [ ] Dynamic output
-			- [ ] Decide how to output:
-				- residuals/stderr
-				- coefficients
-				- model diagnostics
-				- predictions
+		- [o] Dynamic output
+			- giving name outputs model files
+			- no name prints summary to stdout
 		- [ ] train/test sets?
 		- [X] transformation of response variable
 		- [X] category encoding type
 	- [ ] Dynamically handle long matrices
-- [ ] plm (penalized linear regression)
+- [ ] plm (penalized linear model)
