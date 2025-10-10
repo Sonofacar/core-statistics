@@ -48,12 +48,22 @@ int main(int argc, char *argv[])
 	gsl_matrix * covMatrix;
 	gsl_multifit_linear_workspace * work;
 
-	while ((opt = getopt_long_only(argc, argv, ":hdlLn:",
+	while ((opt = getopt_long_only(argc, argv, ":hdtlLn:",
 		longOptions, NULL)) != -1) {
 		switch(opt) {
 			case 'd':
 				if (encoding == ENCODE_NONE) {
 					encoding = ENCODE_DUMMY;
+				} else {
+					fprintf(stderr, "Multiple types of "
+						"encoding specified\n");
+					return 1;
+				}
+				break;
+
+			case 't':
+				if (encoding == ENCODE_NONE) {
+					encoding = ENCODE_TARGET;
 				} else {
 					fprintf(stderr, "Multiple types of "
 						"encoding specified\n");
@@ -175,7 +185,6 @@ int main(int argc, char *argv[])
 	adjRSQ = 1 - ((1 - RSQ) * (nrow - 1) / (nrow - ncol - 1));
 
 	// Calculate the F-statistic
-	// f = ((tss - chisq) / (ncol - 1)) / (chisq / (nrow - ncol));
 	f = ((tss - chisq) * (nrow - ncol) / ((ncol - 1) * chisq));
 
 	// Calculate AIC and BIC

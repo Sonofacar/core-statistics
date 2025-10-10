@@ -16,6 +16,7 @@
 
 // Other math functions
 #include <math.h>
+#include <gsl/gsl_statistics_double.h>
 
 // Offset for transformations
 #define OFFSET 0.01
@@ -32,7 +33,8 @@ typedef enum {
 
 typedef enum {
 	ENCODE_NONE,
-	ENCODE_DUMMY
+	ENCODE_DUMMY,
+	ENCODE_TARGET
 } encodeType;
 
 typedef enum {
@@ -94,10 +96,6 @@ void translate_row_value(rowValue * row, dataColumn * column, int n)
 
 	if (n == 1) {
 		column->type = detect_type(row->value);
-
-		if (column->type == TYPE_STRING) {
-			gsl_vector_free(column->vector);
-		}
 	}
 
 	if (column->type != detect_type(row->value)) {
@@ -270,6 +268,40 @@ int dummy_encode(dataColumn * data, int nrow)
 	return newCols;
 }
 
+void target_encode(dataColumn * data, gsl_vector * response, int nrow)
+{
+	char ** categories;
+	size_t ncat;
+	int i, j, n;
+	double mean;
+	double sum;
+	double * ptrs[nrow];
+
+	// Find all categories
+	ncat = unique_categories(data->to_encode, nrow, &categories);
+
+	// Calculate target means
+	for (i = 0; i < ncat; i++) {
+		// add value to set
+		n = 0;
+		for (j = 0; j < nrow; j++) {
+			if (strcmp(data->to_encode[j], categories[i]) == 0) {
+				ptrs[n++] = gsl_vector_ptr(data->vector, j);
+				sum += gsl_vector_get(response, j);
+			}
+		}
+
+		// compute mean
+		mean = sum / n;
+
+		// set values in output column
+		for (j = 0; j < n; j++) {
+			*ptrs[j] = mean;
+			ptrs[j] = NULL;
+		}
+	}
+}
+
 int encode(dataColumn * data, gsl_vector * response, int nrow,
 		encodeType encoding)
 {
@@ -280,6 +312,11 @@ int encode(dataColumn * data, gsl_vector * response, int nrow,
 		case ENCODE_DUMMY:
 			newCols = dummy_encode(data, nrow);
 			break;
+		
+		case ENCODE_TARGET:
+			target_encode(data, response, nrow);
+			break;
+
 		default:
 			perror("Unknown encoding type, ignoring categories");
 	}
@@ -354,15 +391,11 @@ int read_table(dataColumn ** columnHead, gsl_matrix ** dataMatrix,
 		free(lines[i]);
 	}
 
-	// Set up output matrix
-	*response = gsl_vector_calloc(nrow);
-
 	// Set the first column as the response vector
-	colHead = (*columnHead);
-	status = gsl_vector_memcpy(*response, colHead->vector);
+	colHead = *columnHead;
+	*response = colHead->vector;
 
 	// Encode categorical variables
-	colHead = *columnHead;
 	while (colHead) {
 		if (colHead->to_encode) {
 			addedCols = encode(colHead, *response, nrow, encoding);

@@ -17,7 +17,7 @@ To-do list:
 	- [X] Interpret character values (as categories)
 		- encode categories
 			- [X] dummy encoding
-			- [ ] target encoding
+			- [X] target encoding
 - [ ] lm (linear model)
 	- [X] Create a useful linear model
 	- [ ] Create command line options
