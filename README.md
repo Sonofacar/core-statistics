@@ -18,6 +18,8 @@ To-do list:
 		- encode categories
 			- [X] dummy encoding
 			- [X] target encoding
+- [ ] Write tests
+- [ ] Verify memory usage is correct
 - [ ] lm (linear model)
 	- [X] Create a useful linear model
 	- [ ] Create command line options
