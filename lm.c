@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 	int opt;
 	encodeType encoding = ENCODE_NONE;
 	transformType responseTransform = TRANSFORM_NONE;
-	char * name;
+	char * name = "";
 	diagnoseType output = ALL;
 
 	// Model variables
@@ -255,11 +255,8 @@ int main(int argc, char *argv[])
 	bic = nrow * log(log(2 * M_PI) + 1 + chisq / nrow) + 2 * log(nrow);
 
 	// Print model outputs to stdout
-	if (!name) {
-		print_coefficients(coef, pVals, colNames, ncol);
-		printf("\n");
-		print_diagnostics(rsq, adjRSQ, f, aic, bic);
-	} else {
+	// strlen
+	if (strlen(name)) {
 		save_model(name, coef, colNames, ncol);
 		switch(output) {
 			case ALL:
@@ -286,6 +283,10 @@ int main(int argc, char *argv[])
 				printf("%g\n", f);
 				break;
 		}
+	} else {
+		print_coefficients(coef, pVals, colNames, ncol);
+		printf("\n");
+		print_diagnostics(rsq, adjRSQ, f, aic, bic);
 	}
 
 	// Free memory
