@@ -25,6 +25,7 @@ To-do list:
 	- [ ] Create command line options
 		- [o] Dynamic output
 			- giving name outputs model files
+                - coefficients w/ names
 			- no name prints summary to stdout
 		- [ ] train/test sets?
 		- [X] transformation of response variable

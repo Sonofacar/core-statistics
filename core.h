@@ -63,6 +63,15 @@ typedef struct {
 	gsl_multifit_linear_workspace * work;
 } multiLinearModel;
 
+typedef enum {
+	NONE,
+	AIC,
+	BIC,
+	R_SQUARED,
+	ADJ_R_SQUARED,
+	F_STATISTIC
+} diagnoseType;
+
 dataColumn * column_alloc(int n)
 {
 	dataColumn * output = malloc(sizeof(dataColumn));
@@ -503,12 +512,9 @@ void coefficient_p_values(gsl_vector * pVals, gsl_matrix * varCovar,
 	}
 }
 
-void summarize_model(gsl_vector * coef, gsl_vector * pVals, char ** names,
-		int ncol, double RSQ, double adjRSQ, double fStat, double AIC,
-		double BIC)
+void print_coefficients(gsl_vector * coef, gsl_vector * pVals, char ** names,
+		int ncol)
 {
-	// print coefficients
-	// coefficient VIF
 	printf("Coefficients:\n");
 	printf("%17.17s\tValue\t\tP-Value\n", "Name");
 	for (int i = 0; i < ncol; i++) {
@@ -516,12 +522,15 @@ void summarize_model(gsl_vector * coef, gsl_vector * pVals, char ** names,
 		printf("%9.9g\t", gsl_vector_get(coef, i));
 		printf("%9.9g\n", gsl_vector_get(pVals, i));
 	}
-	printf("\n");
+}
 
+void print_diagnostics(double rSquared, double adjRSquared, double fStat,
+		double AIC, double BIC)
+{
 	// R-squared and adjusted R-squared
 	printf("Model Diagnostics:\n");
-	printf("\tR-squared: %g\n", RSQ);
-	printf("\tAdjusted R-squared: %g\n", adjRSQ);
+	printf("\tR-squared: %g\n", rSquared);
+	printf("\tAdjusted R-squared: %g\n", adjRSquared);
 
 	// F statistic
 	printf("\tF-statistic: %g\n", fStat);
@@ -531,6 +540,4 @@ void summarize_model(gsl_vector * coef, gsl_vector * pVals, char ** names,
 	printf("\tBIC: %g\n", BIC);
 }
 
-void output_model()
-{
-}
+void save_model() {}

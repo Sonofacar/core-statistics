@@ -12,7 +12,12 @@ static struct option longOptions[] = {
 	{"dummy", 0, NULL, 'd'},
 	{"log", 0, NULL, 'l'},
 	{"log-offset", 0, NULL, 'L'},
-	{"name", 1, NULL, 'n'}
+	{"name", 1, NULL, 'n'},
+	{"aic", 0, NULL, 'a'},
+	{"bic", 0, NULL, 'b'},
+	{"r-squared", 0, NULL, 'r'},
+	{"adjusted-r-squared", 0, NULL, 'R'},
+	{"f-statistic", 0, NULL, 'f'}
 };
 
 int main(int argc, char *argv[])
@@ -22,18 +27,19 @@ int main(int argc, char *argv[])
 	encodeType encoding = ENCODE_NONE;
 	transformType responseTransform = TRANSFORM_NONE;
 	char * name;
+	diagnoseType output = NONE;
 
 	// Model variables
 	int status;
 	int nrow;
 	int ncol;
 	double chisq;
-	double RSQ;
+	double rsq;
 	double adjRSQ;
 	double tss;
 	double f;
-	double AIC;
-	double BIC;
+	double aic;
+	double bic;
 	char ** lines = NULL;
 	char ** colNames = NULL;
 	dataColumn * columnHead;
@@ -49,7 +55,7 @@ int main(int argc, char *argv[])
 	gsl_matrix * covMatrix;
 	gsl_multifit_linear_workspace * work;
 
-	while ((opt = getopt_long_only(argc, argv, ":hdtlLn:",
+	while ((opt = getopt_long_only(argc, argv, ":hdtlLn:abrRf",
 		longOptions, NULL)) != -1) {
 		switch(opt) {
 			case 'd':
@@ -79,7 +85,7 @@ int main(int argc, char *argv[])
 						"command line.\n");
 				printf("\n");
 				printf("OPTIONS:\n");
-				printf("\t-d,--dummy\tDummy encode categorical"
+				printf("\t-d,--dummy\tDummy encode categorical "
 						"variables\n");
 				printf("\t-l,--log\tLog transform response "
 						"variable\n");
@@ -95,7 +101,7 @@ int main(int argc, char *argv[])
 				if (responseTransform  == TRANSFORM_NONE) {
 					responseTransform = TRANSFORM_LOG;
 				} else {
-					fprintf(stderr, "Multiple"
+					fprintf(stderr, "Multiple "
 						"transformations specified\n");
 					return 1;
 				}
@@ -106,7 +112,7 @@ int main(int argc, char *argv[])
 					responseTransform =
 						TRANSFORM_LOG_OFFSET;
 				} else {
-					fprintf(stderr, "Multiple"
+					fprintf(stderr, "Multiple "
 						"transformations specified\n");
 					return 1;
 				}
@@ -114,6 +120,56 @@ int main(int argc, char *argv[])
 
 			case 'n':
 				name = strdup(optarg);
+				break;
+
+			case 'a':
+				if (output == NONE) {
+					output = AIC;
+				} else {
+					fprintf(stderr, "Multiple diagnostics "
+	     					"specified. Using the "
+	     					"first.\n");
+				}
+				break;
+
+			case 'b':
+				if (output == NONE) {
+					output = BIC;
+				} else {
+					fprintf(stderr, "Multiple diagnostics "
+	     					"specified. Using the "
+	     					"first.\n");
+				}
+				break;
+
+			case 'r':
+				if (output == NONE) {
+					output = R_SQUARED;
+				} else {
+					fprintf(stderr, "Multiple diagnostics "
+	     					"specified. Using the "
+	     					"first.\n");
+				}
+				break;
+
+			case 'R':
+				if (output == NONE) {
+					output = ADJ_R_SQUARED;
+				} else {
+					fprintf(stderr, "Multiple diagnostics "
+	     					"specified. Using the "
+	     					"first.\n");
+				}
+				break;
+
+			case 'f':
+				if (output == NONE) {
+					output = F_STATISTIC;
+				} else {
+					fprintf(stderr, "Multiple diagnostics "
+	     					"specified. Using the "
+	     					"first.\n");
+				}
 				break;
 
 			case '?':
@@ -188,18 +244,45 @@ int main(int argc, char *argv[])
 	gsl_vector_free(meanResponse);
 
 	// Calculate R-squared values
-	RSQ = 1 - (chisq/tss);
-	adjRSQ = 1 - ((1 - RSQ) * (nrow - 1) / (nrow - ncol - 1));
+	rsq = 1 - (chisq/tss);
+	adjRSQ = 1 - ((1 - rsq) * (nrow - 1) / (nrow - ncol - 1));
 
 	// Calculate the F-statistic
 	f = ((tss - chisq) * (nrow - ncol) / ((ncol - 1) * chisq));
 
 	// Calculate AIC and BIC
-	AIC = nrow * log(log(2 * M_PI) + 1 + chisq / nrow) + 2 * ncol;
-	BIC = nrow * log(log(2 * M_PI) + 1 + chisq / nrow) + 2 * log(nrow);
+	aic = nrow * log(log(2 * M_PI) + 1 + chisq / nrow) + 2 * ncol;
+	bic = nrow * log(log(2 * M_PI) + 1 + chisq / nrow) + 2 * log(nrow);
 
 	// Print model outputs to stdout
-	summarize_model(coef, pVals, colNames, ncol, RSQ, adjRSQ, f, AIC, BIC);
+	if (!name) {
+		print_coefficients(coef, pVals, colNames, ncol);
+		printf("\n");
+		print_diagnostics(rsq, adjRSQ, f, aic, bic);
+	} else {
+		save_model();
+		switch(output) {
+			case AIC:
+				printf("%g\n", aic);
+				break;
+
+			case BIC:
+				printf("%g\n", bic);
+				break;
+
+			case R_SQUARED:
+				printf("%g\n", rsq);
+				break;
+
+			case ADJ_R_SQUARED:
+				printf("%g\n", adjRSQ);
+				break;
+
+			case F_STATISTIC:
+				printf("%g\n", f);
+				break;
+		}
+	}
 
 	// Free memory
 	free(colNames);
