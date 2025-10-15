@@ -9,6 +9,7 @@
 // optional_argument: 2
 static struct option longOptions[] = {
 	{"help", 0, NULL, 'h'},
+	{"input", 1, NULL, 'i'},
 	{"dummy", 0, NULL, 'd'},
 	{"log", 0, NULL, 'l'},
 	{"log-offset", 0, NULL, 'L'},
@@ -27,6 +28,7 @@ int main(int argc, char *argv[])
 	encodeType encoding = ENCODE_NONE;
 	transformType responseTransform = TRANSFORM_NONE;
 	char * name = "";
+	FILE * input = stdin;
 	diagnoseType output = ALL;
 
 	// Model variables
@@ -55,9 +57,53 @@ int main(int argc, char *argv[])
 	gsl_matrix * covMatrix;
 	gsl_multifit_linear_workspace * work;
 
-	while ((opt = getopt_long_only(argc, argv, ":hdtlLn:abrRf",
+	while ((opt = getopt_long_only(argc, argv, ":hi:dtlLn:abrRf",
 		longOptions, NULL)) != -1) {
 		switch(opt) {
+			case 'h':
+				printf("Usage: lm [-h] [-i file] [-d] [-l] "
+					"[-L] [-n name]\n");
+				printf("Perform linear regression from the "
+					"command line.\n");
+				printf("\n");
+				printf("OPTIONS:\n");
+				printf("\t-i, --input\tSpecify input file. If "
+					"not given, stdin will be used.\n");
+				printf("\t-d,--dummy\tDummy encode categorical "
+					"variables\n");
+				printf("\t-l,--log\tLog transform response "
+					"variable\n");
+				printf("\t-L,--log-offset\tLog transform "
+					"response variable with offset (to "
+					"allow\n");
+				printf("\t\t\tfor 0 values)\n");
+				printf("\t-n, --name\tGive a name for the "
+	   				"model. This option is required to\n");
+				printf("use the DIAGNOSTICS option.\n");
+				printf("\t-h,--help\tPrint this help "
+					"message\n");
+				printf("\n");
+				printf("DIAGNOSTICS:\n");
+				printf("\tFor the following options, the "
+	   				"'name' option must have been given "
+	   				"for \n");
+	   			printf("\tit to apply. Otherwise, these will "
+					"just be ignored. These options \n");
+	      			printf("\twill specify a single model "
+					"diagnostic to print to stdout.\n");
+				printf("\n");
+				printf("\t-a, --aic\n");
+				printf("\t-b, --bic\n");
+				printf("\t-r, --r-squared\n");
+				printf("\t-R, --adjusted-r-squared\n");
+				printf("\t-f, --f-statistic\n");
+				return 1;
+				break;
+
+			case 'i':
+				input = fopen(optarg, "r");
+				break;
+
 			case 'd':
 				if (encoding == ENCODE_NONE) {
 					encoding = ENCODE_DUMMY;
@@ -76,25 +122,6 @@ int main(int argc, char *argv[])
 						"encoding specified\n");
 					return 1;
 				}
-				break;
-
-			case 'h':
-				printf("Usage: lm [-h] [-d] [-l] [-L] "
-					"[-n name]\n");
-				printf("Perform linear regression from the "
-						"command line.\n");
-				printf("\n");
-				printf("OPTIONS:\n");
-				printf("\t-d,--dummy\tDummy encode categorical "
-						"variables\n");
-				printf("\t-l,--log\tLog transform response "
-						"variable\n");
-				printf("\t-L,--log-offset\tLog transform "
-					"response variable with offset (to "
-					"allow for\n");
-				printf("\t\t\t0 values)\n");
-				printf("\t-h,--help\tPrint this help message\n");
-				return 1;
 				break;
 
 			case 'l':
@@ -181,7 +208,7 @@ int main(int argc, char *argv[])
 	}
 
 	// Parse incoming csv file
-	nrow = read_rows(&lines);
+	nrow = read_rows(&lines, input);
 	columnHead = column_alloc(nrow);
 	ncol = read_columns(columnHead, lines, encoding, nrow);
 	dataMatrix = gsl_matrix_alloc(nrow, ncol);
@@ -284,6 +311,10 @@ int main(int argc, char *argv[])
 				break;
 		}
 	} else {
+		if (output != ALL) {
+			fprintf(stderr, "Error: Diagnostic option given with "
+				"no name. It will be ignored.\n");
+		}
 		print_coefficients(coef, pVals, colNames, ncol);
 		printf("\n");
 		print_diagnostics(rsq, adjRSQ, f, aic, bic);

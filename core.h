@@ -372,7 +372,7 @@ int encode(dataColumn * data, gsl_vector * response, int nrow,
 	return newCols;
 }
 
-int read_rows(char *** lines)
+int read_rows(char *** lines, FILE * input)
 {
 	int nrow = 0;
 	char * line = NULL;
@@ -381,7 +381,7 @@ int read_rows(char *** lines)
 	int capacity = 0;
 
 	// Read in the document
-	while (getline(&line, &len, stdin) != -1) {
+	while (getline(&line, &len, input) != -1) {
 		// Reallocate if more memory is needed
 		if (nrow >= capacity) {
 			capacity = capacity == 0 ? 1 : capacity + sizeof(char *);
