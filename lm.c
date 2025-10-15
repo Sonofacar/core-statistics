@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 				printf("\t\t\tfor 0 values)\n");
 				printf("\t-n, --name\tGive a name for the "
 	   				"model. This option is required to\n");
-				printf("use the DIAGNOSTICS option.\n");
+				printf("\t\t\tuse the DIAGNOSTICS option.\n");
 				printf("\t-h,--help\tPrint this help "
 					"message\n");
 				printf("\n");
