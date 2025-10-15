@@ -64,7 +64,7 @@ typedef struct {
 } multiLinearModel;
 
 typedef enum {
-	NONE,
+	ALL,
 	AIC,
 	BIC,
 	R_SQUARED,

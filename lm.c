@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 	encodeType encoding = ENCODE_NONE;
 	transformType responseTransform = TRANSFORM_NONE;
 	char * name;
-	diagnoseType output = NONE;
+	diagnoseType output = ALL;
 
 	// Model variables
 	int status;
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 				break;
 
 			case 'a':
-				if (output == NONE) {
+				if (output == ALL) {
 					output = AIC;
 				} else {
 					fprintf(stderr, "Multiple diagnostics "
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 				break;
 
 			case 'b':
-				if (output == NONE) {
+				if (output == ALL) {
 					output = BIC;
 				} else {
 					fprintf(stderr, "Multiple diagnostics "
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 				break;
 
 			case 'r':
-				if (output == NONE) {
+				if (output == ALL) {
 					output = R_SQUARED;
 				} else {
 					fprintf(stderr, "Multiple diagnostics "
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
 				break;
 
 			case 'R':
-				if (output == NONE) {
+				if (output == ALL) {
 					output = ADJ_R_SQUARED;
 				} else {
 					fprintf(stderr, "Multiple diagnostics "
@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
 				break;
 
 			case 'f':
-				if (output == NONE) {
+				if (output == ALL) {
 					output = F_STATISTIC;
 				} else {
 					fprintf(stderr, "Multiple diagnostics "
@@ -262,6 +262,10 @@ int main(int argc, char *argv[])
 	} else {
 		save_model();
 		switch(output) {
+			case ALL:
+				print_diagnostics(rsq, adjRSQ, f, aic, bic);
+				break;
+
 			case AIC:
 				printf("%g\n", aic);
 				break;
