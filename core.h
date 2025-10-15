@@ -540,4 +540,16 @@ void print_diagnostics(double rSquared, double adjRSquared, double fStat,
 	printf("\tBIC: %g\n", BIC);
 }
 
-void save_model() {}
+void save_model(char * baseName, gsl_vector * coef, char ** colNames, int p)
+{
+	FILE * file;
+	char * name;
+
+	// Write coefficients and column names
+	name = strcat(baseName, ".coef");
+	file = fopen(name, "w");
+	for (int i = 0; i < p; i++) {
+		fprintf(file, "%s\t%g\n", colNames[i], gsl_vector_get(coef, i));
+	}
+	fclose(file);
+}

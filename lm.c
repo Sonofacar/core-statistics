@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
 		printf("\n");
 		print_diagnostics(rsq, adjRSQ, f, aic, bic);
 	} else {
-		save_model();
+		save_model(name, coef, colNames, ncol);
 		switch(output) {
 			case ALL:
 				print_diagnostics(rsq, adjRSQ, f, aic, bic);

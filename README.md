@@ -22,10 +22,11 @@ To-do list:
 - [X] Verify memory usage is correct
 - [ ] lm (linear model)
 	- [X] Create a useful linear model
-	- [ ] Create command line options
+	- [X] Create command line options
 		- [o] Dynamic output
-			- giving name outputs model files
+			- giving name outputs model file
                 - coefficients w/ names
+                - options print model diagnostics to stdout
 			- no name prints summary to stdout
 		- [ ] train/test sets?
 		- [X] transformation of response variable
