@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
 	double f;
 	double AIC;
 	double BIC;
+	char ** lines = NULL;
 	char ** colNames = NULL;
 	dataColumn * columnHead;
 	dataColumn * colPtr;
@@ -124,15 +125,15 @@ int main(int argc, char *argv[])
 	}
 
 	// Parse incoming csv file
-	status = read_table(&columnHead, &dataMatrix, &response, encoding);
+	nrow = read_rows(&lines);
+	columnHead = column_alloc(nrow);
+	ncol = read_columns(columnHead, lines, encoding, nrow);
+	dataMatrix = gsl_matrix_alloc(nrow, ncol);
+	response = columnHead->vector; // First column is the response
+	status = arrange_data(columnHead, dataMatrix, response, nrow, ncol);
 
-	// Extract data size
-	nrow = dataMatrix->size1;
-	ncol = dataMatrix->size2;
-
-	// Pull out column names
+	// Pull out column names, skipping the response
 	colPtr = columnHead;
-	// and skip the response
 	colPtr = colPtr->nextColumn;
 	colNames = malloc(ncol * sizeof(char *));
 	for (int i = 0; i < ncol; i++) {
@@ -166,10 +167,13 @@ int main(int argc, char *argv[])
 	// Fit the model
 	gsl_multifit_linear(dataMatrix, response, coef, covMatrix, &chisq,
 			work);
+	gsl_matrix_free(dataMatrix);
+	gsl_multifit_linear_free(work);
 
 	// Calculate coefficient p-values
 	pVals = gsl_vector_alloc(ncol);
 	coefficient_p_values(pVals, covMatrix, coef, ncol, nrow - ncol);
+	gsl_matrix_free(covMatrix);
 
 	// Calculate sum of squares values
 	meanResponse = gsl_vector_alloc(nrow);
@@ -179,6 +183,9 @@ int main(int argc, char *argv[])
 	status = gsl_vector_sub(st, meanResponse);
 	status = gsl_vector_mul(st, st);
 	tss = gsl_vector_sum(st);
+	column_free(columnHead);
+	gsl_vector_free(st);
+	gsl_vector_free(meanResponse);
 
 	// Calculate R-squared values
 	RSQ = 1 - (chisq/tss);
@@ -193,6 +200,11 @@ int main(int argc, char *argv[])
 
 	// Print model outputs to stdout
 	summarize_model(coef, pVals, colNames, ncol, RSQ, adjRSQ, f, AIC, BIC);
+
+	// Free memory
+	free(colNames);
+	gsl_vector_free(coef);
+	gsl_vector_free(pVals);
 
 	return status;
 }
