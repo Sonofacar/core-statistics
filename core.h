@@ -422,7 +422,7 @@ int read_rows(char *** lines, FILE * input)
 int read_columns(dataColumn * colHead, char ** lines, encodeType encoding,
 		int nrow)
 {
-	int addedCols;
+	int addedCols = 0;
 	int ncol = 0;
 	dataColumn * p = colHead;
 
@@ -439,7 +439,7 @@ int read_columns(dataColumn * colHead, char ** lines, encodeType encoding,
 	// Encode categorical variables
 	while (p) {
 		if (p->to_encode) {
-			addedCols = encode(p, colHead->vector, nrow,
+			addedCols += encode(p, colHead->vector, nrow,
 					encoding);
 		}
 		p = p->nextColumn;
