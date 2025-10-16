@@ -1,4 +1,3 @@
-#include <gsl/gsl_multifit.h>
 #include <unistd.h>
 #include <getopt.h>
 #include "core.h"
@@ -282,7 +281,6 @@ int main(int argc, char *argv[])
 	bic = nrow * log(log(2 * M_PI) + 1 + chisq / nrow) + 2 * log(nrow);
 
 	// Print model outputs to stdout
-	// strlen
 	if (strlen(name)) {
 		save_model(name, coef, colNames, ncol);
 		switch(output) {
