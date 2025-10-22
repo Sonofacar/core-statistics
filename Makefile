@@ -1,17 +1,41 @@
-PREFIX = /usr/local
+CC := gcc
+CFLAGS := -Wall -Wextra -std=gnu11 -g $(shell gsl-config --cflags)
+LDFLAGS := $(shell gsl-config --libs)
+TEST_LIBS := $(shell pkg-config --libs cmocka)
+SRC := core.c lm.c
+OBJS := $(SRC:.c=.o)
+TARGET := lm
 
-lm: lm.c core.h
-	gcc lm.c -o $@ -ggdb $$(gsl-config --cflags)  $$(gsl-config --libs)
+TEST_SRC := runtests.c core.c
+TEST_OBJS := $(TEST_SRC:.c=.o)
+TEST_BIN := tests
+
+# List wrapped functions here (no need for quotes or commas)
+WRAPS := dummy_encode target_encode
+
+# Convert WRAPS list into linker flags
+WRAP_FLAGS := $(foreach f,$(WRAPS),-Wl,--wrap=$(f))
+
+.PHONY: all clean test
+
+# Default target
+all: $(TARGET)
+
+# Main program
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+# Run tests
+test: $(TEST_BIN)
+	@echo "Running tests..."
+	@./$(TEST_BIN)
+
+$(TEST_BIN): $(TEST_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(TEST_LIBS) $(WRAP_FLAGS)
+
+# Generic compile rule
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f lm
-
-install: lm
-	mkdir -p $(DESTDIR)$(PREFIX)/bin
-	cp -f lm $(DESTDIR)$(PREFIX)/bin
-	chmod 775 $(DESTDIR)$(PREFIX)/bin/lm
-
-uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/lm
-
-.PHONY: clean install uninstall
+	rm -f $(OBJS) $(TEST_OBJS) $(TARGET) $(TEST_BIN)
