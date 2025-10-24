@@ -23,7 +23,7 @@
 dataColumn * column_alloc(int n)
 {
 	dataColumn * output = malloc(sizeof(dataColumn));
-	output->name = malloc(0);
+	output->name = malloc(sizeof(char *));
 	output->vector = gsl_vector_alloc(n);
 	output->to_encode = NULL;
 	output->nextColumn = NULL;
@@ -107,7 +107,7 @@ int process_row(dataColumn * data, size_t n, int row, char * line,
 {
 	dataColumn * colHead = data;
 	rowValue * values;
-	rowValue * rowHead = values;
+	rowValue * rowHead;
 	char * raw;
 	int ncol = 0;
 
@@ -127,7 +127,7 @@ int process_row(dataColumn * data, size_t n, int row, char * line,
 	}
 
 	// Continue to collect values for all other rows
-	while (raw = strsep(&line, ",")) {
+	while ((raw = strsep(&line, ","))) {
 		rowHead->nextValue = malloc(sizeof(rowValue));
 		rowHead = rowHead->nextValue;
 		rowHead->value = raw;
@@ -180,9 +180,9 @@ int compare_items(const void * x, const void * y)
 	return strcmp(str1, str2);
 }
 
-size_t unique_categories(char ** column, int n, char *** dest)
+int unique_categories(char ** column, int n, char *** dest)
 {
-	size_t output = 0;
+	int output = 0;
 	char ** sorted;
 
 	// Copy strings
@@ -212,7 +212,7 @@ int dummy_encode(dataColumn * data, int nrow)
 	dataColumn * head;
 	dataColumn * remaining;
 	char * name = data->name;
-	size_t ncat;
+	int ncat;
 	double value;
 	int newCols = 0;
 
@@ -260,7 +260,7 @@ int dummy_encode(dataColumn * data, int nrow)
 void target_encode(dataColumn * data, gsl_vector * response, int nrow)
 {
 	char ** categories;
-	size_t ncat;
+	int ncat;
 	int i, j, n;
 	double mean;
 	double sum;
@@ -300,7 +300,6 @@ int encode(dataColumn * data, gsl_vector * response, int nrow,
 {
 	int newCols = 0;
 
-	dataColumn * newData;
 	switch (encoding) {
 		case ENCODE_DUMMY:
 			newCols = dummy_encode(data, nrow);
@@ -374,7 +373,7 @@ int read_columns(dataColumn * colHead, char ** lines, encodeType encoding,
 	int ncol = 0;
 	dataColumn * p = colHead;
 
-	for (size_t i = 0; i <= nrow; i++) {
+	for (int i = 0; i <= nrow; i++) {
 		if (i == 0) {
 			ncol = process_row(colHead, nrow, i, lines[i], true);
 		} else if ((process_row(colHead, nrow, i, lines[i], false))
@@ -399,15 +398,14 @@ int read_columns(dataColumn * colHead, char ** lines, encodeType encoding,
 	return ncol;
 }
 
-int arrange_data(dataColumn * columnHead, gsl_matrix * dataMatrix,
-		gsl_vector * response, int nrow, int ncol)
+int arrange_data(dataColumn * columnHead, gsl_matrix * dataMatrix, int ncol)
 {
 	int status;
 	dataColumn * colHead = columnHead;
 
 	// Put all other rows in the data matrix
 	colHead = columnHead->nextColumn;
-	for (size_t i = 0; i < ncol; i++) {
+	for (int i = 0; i < ncol; i++) {
 		status = gsl_matrix_set_col(dataMatrix, i, colHead->vector);
 
 		if (status) {

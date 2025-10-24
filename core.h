@@ -85,7 +85,7 @@ int process_row(dataColumn * data, size_t n, int row, char * line,
 
 int compare_items(const void * x, const void * y);
 
-size_t unique_categories(char ** column, int n, char *** dest);
+int unique_categories(char ** column, int n, char *** dest);
 
 int dummy_encode(dataColumn * data, int nrow);
 
@@ -99,8 +99,7 @@ int read_rows(char *** lines, FILE * input);
 int read_columns(dataColumn * colHead, char ** lines, encodeType encoding,
 		int nrow);
 
-int arrange_data(dataColumn * columnHead, gsl_matrix * dataMatrix,
-		gsl_vector * response, int nrow, int ncol);
+int arrange_data(dataColumn * columnHead, gsl_matrix * dataMatrix, int ncol);
 
 double log_offset(double d);
 

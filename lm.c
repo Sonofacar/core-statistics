@@ -47,8 +47,6 @@ int main(int argc, char *argv[])
 	dataColumn * columnHead;
 	dataColumn * colPtr;
 	gsl_vector * response;
-	gsl_vector * fit;
-	gsl_vector * residuals;
 	gsl_vector * meanResponse;
 	gsl_vector * coef;
 	gsl_vector * st;
@@ -213,7 +211,7 @@ int main(int argc, char *argv[])
 	ncol = read_columns(columnHead, lines, encoding, nrow);
 	dataMatrix = gsl_matrix_alloc(nrow, ncol);
 	response = columnHead->vector; // First column is the response
-	status = arrange_data(columnHead, dataMatrix, response, nrow, ncol);
+	status = arrange_data(columnHead, dataMatrix, ncol);
 
 	// Pull out column names, skipping the response
 	colPtr = columnHead;
@@ -244,6 +242,9 @@ int main(int argc, char *argv[])
 
 		case TRANSFORM_LOG_OFFSET:
 			transform(response, log_offset, nrow);
+			break;
+
+		case TRANSFORM_NONE:
 			break;
 	}
 
