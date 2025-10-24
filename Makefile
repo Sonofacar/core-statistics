@@ -6,9 +6,9 @@ SRC := core.c encode.c lm.c
 OBJS := $(SRC:.c=.o)
 TARGET := lm
 
-TEST_SRC := runtests.c core.c
+TEST_SRC := runtests.c core.c encode.c
 TEST_OBJS := $(TEST_SRC:.c=.o)
-TEST_BIN := tests
+TEST_BIN := runtests
 
 # List wrapped functions here (no need for quotes or commas)
 WRAPS := dummy_encode target_encode
@@ -23,7 +23,7 @@ all: $(TARGET)
 
 # Main program
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) -static $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 # Run tests
 test: $(TEST_BIN)

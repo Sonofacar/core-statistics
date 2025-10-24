@@ -34,7 +34,8 @@ typedef enum {
 typedef enum {
 	ENCODE_NONE,
 	ENCODE_DUMMY,
-	ENCODE_MEAN_TARGET
+	ENCODE_MEAN_TARGET,
+	ENCODE_MEDIAN_TARGET
 } encodeType;
 
 typedef enum {
@@ -94,6 +95,8 @@ int no_encode(dataColumn * data, gsl_vector * response, int nrow);
 int dummy_encode(dataColumn * data, gsl_vector * response, int nrow);
 
 int mean_target_encode(dataColumn * data, gsl_vector * response, int nrow);
+
+int median_target_encode(dataColumn * data, gsl_vector * response, int nrow);
 
 int read_rows(char *** lines, FILE * input);
 

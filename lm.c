@@ -11,6 +11,8 @@ static struct option longOptions[] = {
 	{"help", 0, NULL, 'h'},
 	{"input", 1, NULL, 'i'},
 	{"dummy", 0, NULL, 'd'},
+	{"target-mean", 0, NULL, 't'},
+	{"target-median", 0, NULL, 'T'},
 	{"log", 0, NULL, 'l'},
 	{"log-offset", 0, NULL, 'L'},
 	{"name", 1, NULL, 'n'},
@@ -55,32 +57,59 @@ int main(int argc, char *argv[])
 	gsl_matrix * covMatrix;
 	gsl_multifit_linear_workspace * work;
 
-	while ((opt = getopt_long_only(argc, argv, ":hi:dtlLn:abrRf",
+	while ((opt = getopt_long_only(argc, argv, ":hi:dtTlLn:abrRf",
 		longOptions, NULL)) != -1) {
 		switch(opt) {
 			case 'h':
-				printf("Usage: lm [-h] [-i file] [-d] [-l] "
-					"[-L] [-n name]\n");
+				printf("Usage: lm [-h] [-i file] [-n name] [TRANSFORM] [ENCODING] [DIAGNOSTIC]\n");
 				printf("Perform linear regression from the "
 					"command line.\n");
 				printf("\n");
+
 				printf("OPTIONS:\n");
 				printf("\t-i, --input\tSpecify input file. If "
 					"not given, stdin will be used.\n");
-				printf("\t-d,--dummy\tDummy encode categorical "
-					"variables\n");
-				printf("\t-l,--log\tLog transform response "
-					"variable\n");
-				printf("\t-L,--log-offset\tLog transform "
-					"response variable with offset (to "
-					"allow\n");
-				printf("\t\t\tfor 0 values)\n");
 				printf("\t-n, --name\tGive a name for the "
 	   				"model. This option is required to\n");
 				printf("\t\t\tuse the DIAGNOSTICS option.\n");
 				printf("\t-h,--help\tPrint this help "
 					"message\n");
 				printf("\n");
+
+				printf("RESPONSE TRANSPOSITION:\n");
+				printf("\tThe following options transpose the "
+	   				"response variable. This is "
+	   				"unusable\n");
+				printf("\tif the response has incompatible "
+	   				"values (example: values <=0 for "
+	   				"log\n");
+	   			printf("\ttrasposition).\n");
+				printf("\n");
+				printf("\t-l,--log\tLog transformation\n");
+				printf("\t-L,--log-offset\tOffset log "
+	   				"transformation by %g, allowing 0\n",
+	   				OFFSET);
+				printf("\t\t\tvalues\n");
+				printf("\n");
+
+				printf("ENCODING:\n");
+				printf("\tThe following options allow for "
+	   				"character values to be "
+	   				"interpreted\n");
+				printf("\tby encoding them numerically. If "
+	   				"not used, character columns will "
+	   				"come\n");
+				printf("\tup as '0' values, being effectively "
+	   				"ignored.\n");
+				printf("\n");
+				printf("\t-d,--dummy\t\tDummy/One-hot "
+	   				"encoding\n");
+				printf("\t-t,--target-mean\tMean target "
+	   				"encoding\n");
+				printf("\t-T,--target-median\tMedian target "
+	   				"encoding\n");
+				printf("\n");
+
 				printf("DIAGNOSTICS:\n");
 				printf("\tFor the following options, the "
 	   				"'name' option must have been given "
@@ -115,6 +144,16 @@ int main(int argc, char *argv[])
 			case 't':
 				if (encoding == ENCODE_NONE) {
 					encoding = ENCODE_MEAN_TARGET;
+				} else {
+					fprintf(stderr, "Multiple types of "
+						"encoding specified\n");
+					return 1;
+				}
+				break;
+
+			case 'T':
+				if (encoding == ENCODE_NONE) {
+					encoding = ENCODE_MEDIAN_TARGET;
 				} else {
 					fprintf(stderr, "Multiple types of "
 						"encoding specified\n");
@@ -217,6 +256,11 @@ int main(int argc, char *argv[])
 		case ENCODE_MEAN_TARGET:
 			ncol = read_columns(columnHead, lines,
 		       			mean_target_encode, nrow);
+			break;
+
+		case ENCODE_MEDIAN_TARGET:
+			ncol = read_columns(columnHead, lines,
+		       			median_target_encode, nrow);
 			break;
 
 		case ENCODE_NONE:
