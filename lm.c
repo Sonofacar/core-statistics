@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
 
 			case 't':
 				if (encoding == ENCODE_NONE) {
-					encoding = ENCODE_TARGET;
+					encoding = ENCODE_MEAN_TARGET;
 				} else {
 					fprintf(stderr, "Multiple types of "
 						"encoding specified\n");
@@ -208,7 +208,22 @@ int main(int argc, char *argv[])
 	// Parse incoming csv file
 	nrow = read_rows(&lines, input);
 	columnHead = column_alloc(nrow);
-	ncol = read_columns(columnHead, lines, encoding, nrow);
+	switch(encoding) {
+		case ENCODE_DUMMY:
+			ncol = read_columns(columnHead, lines, dummy_encode,
+					nrow);
+			break;
+
+		case ENCODE_MEAN_TARGET:
+			ncol = read_columns(columnHead, lines,
+		       			mean_target_encode, nrow);
+			break;
+
+		case ENCODE_NONE:
+			ncol = read_columns(columnHead, lines, no_encode,
+					nrow);
+			break;
+	}
 	dataMatrix = gsl_matrix_alloc(nrow, ncol);
 	response = columnHead->vector; // First column is the response
 	status = arrange_data(columnHead, dataMatrix, ncol);

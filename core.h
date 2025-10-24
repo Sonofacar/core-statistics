@@ -34,7 +34,7 @@ typedef enum {
 typedef enum {
 	ENCODE_NONE,
 	ENCODE_DUMMY,
-	ENCODE_TARGET
+	ENCODE_MEAN_TARGET
 } encodeType;
 
 typedef enum {
@@ -72,6 +72,8 @@ typedef enum {
 	F_STATISTIC
 } diagnoseType;
 
+typedef int (encode_func)(dataColumn * data, gsl_vector * response, int nrow);
+
 dataColumn * column_alloc(int n);
 
 void column_free(dataColumn * data);
@@ -87,17 +89,15 @@ int compare_items(const void * x, const void * y);
 
 int unique_categories(char ** column, int n, char *** dest);
 
-int dummy_encode(dataColumn * data, int nrow);
+int no_encode(dataColumn * data, gsl_vector * response, int nrow);
 
-void target_encode(dataColumn * data, gsl_vector * response, int nrow);
+int dummy_encode(dataColumn * data, gsl_vector * response, int nrow);
 
-int encode(dataColumn * data, gsl_vector * response, int nrow,
-		encodeType encoding);
+int mean_target_encode(dataColumn * data, gsl_vector * response, int nrow);
 
 int read_rows(char *** lines, FILE * input);
 
-int read_columns(dataColumn * colHead, char ** lines, encodeType encoding,
-		int nrow);
+int read_columns(dataColumn * colHead, char ** lines, encode_func, int nrow);
 
 int arrange_data(dataColumn * columnHead, gsl_matrix * dataMatrix, int ncol);
 
