@@ -1,5 +1,5 @@
 lm
-tests
+runtests
 *.o
 *.csv
 *.coef
