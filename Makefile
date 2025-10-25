@@ -11,7 +11,7 @@ TEST_OBJS := $(TEST_SRC:.c=.o)
 TEST_BIN := runtests
 
 # List wrapped functions here (no need for quotes or commas)
-WRAPS := malloc gsl_vector_alloc
+WRAPS := malloc gsl_vector_alloc free
 
 # Convert WRAPS list into linker flags
 WRAP_FLAGS := $(foreach f,$(WRAPS),-Wl,--wrap=$(f))

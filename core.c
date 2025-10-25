@@ -41,19 +41,25 @@ dataColumn * column_alloc(int n, char name[])
 
 void column_free(dataColumn * data)
 {
-	if (data->name) {
-		free(data->name);
-	}
+	if (data) {
+		if (data->name) {
+			free(data->name);
+			data->name = NULL;
+		}
 
-	if (data->vector) {
-		gsl_vector_free(data->vector);
-	}
+		if (data->vector) {
+			gsl_vector_free(data->vector);
+			data->vector = NULL;
+		}
 
-	if (data->nextColumn) {
-		column_free(data->nextColumn);
-	}
+		if (data->nextColumn) {
+			column_free(data->nextColumn);
+			data->nextColumn = NULL;
+		}
 
-	free(data);
+		free(data);
+		data = NULL;
+	}
 }
 
 valueType detect_type(const char *value)
@@ -61,9 +67,16 @@ valueType detect_type(const char *value)
 	bool has_dot = false;
 	bool has_digit = false;
 	const char *p = value;
+	const char *P = p + strlen(p) - 1;
 
 	// Skip leading whitespaces
 	while (isspace(*p)) p++;
+
+	// Set end to final non-trailing whitespace
+	while (isspace(*P)) {
+		P--;
+	}
+	P++; // Adjust back to the final space
 
 	// Optional sign
 	if (*p == '+' || *p == '-') p++;
@@ -74,6 +87,8 @@ valueType detect_type(const char *value)
 		} else if (*p == '.') {
 			if (has_dot) return TYPE_STRING; // multiple dots = string
 			has_dot = true;
+		} else if (p == P) {
+			break;
 		} else {
 			return TYPE_STRING;
 		}
