@@ -34,12 +34,13 @@ int dummy_encode(dataColumn * data, gsl_vector * response, int nrow)
 	head = data;
 	for (int i = 0; i < ncat - 1; i++) {
 		if (i != 0) {
-			head->nextColumn = column_alloc(nrow);
+			head->nextColumn = column_alloc(nrow, name);
 			head = head->nextColumn;
 			newCols++;
 		}
 
-		head->name = strdup(name);
+		head->name = realloc(head->name, sizeof(*head->name)
+				+ sizeof("_") + sizeof(categories[i]));
 		strcat(head->name, "_");
 		strcat(head->name, categories[i]);
 		head->type = TYPE_DOUBLE;

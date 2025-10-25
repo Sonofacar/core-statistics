@@ -20,11 +20,19 @@
 
 #include "core.h"
 
-dataColumn * column_alloc(int n)
+dataColumn * column_alloc(int n, char name[])
 {
 	dataColumn * output = malloc(sizeof(dataColumn));
-	output->name = malloc(sizeof(char *));
+	if (!output) {
+		return NULL;
+	}
+	output->name = strdup(name);
 	output->vector = gsl_vector_alloc(n);
+	if (!output->vector) {
+		free(output->name);
+		free(output);
+		return NULL;
+	}
 	output->to_encode = NULL;
 	output->nextColumn = NULL;
 
@@ -140,9 +148,8 @@ int process_row(dataColumn * data, size_t n, int row, char * line,
 		colHead->name = strdup(rowHead->value);
 		rowHead = rowHead->nextValue;
 		while (rowHead) {
-			colHead->nextColumn = column_alloc(n);
+			colHead->nextColumn = column_alloc(n, rowHead->value);
 			colHead = colHead->nextColumn;
-			colHead->name = strdup(rowHead->value);
 			rowHead = rowHead->nextValue;
 
 			ncol++;

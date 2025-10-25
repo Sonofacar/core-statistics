@@ -75,7 +75,7 @@ typedef enum {
 
 typedef int (encode_func)(dataColumn * data, gsl_vector * response, int nrow);
 
-dataColumn * column_alloc(int n);
+dataColumn * column_alloc(int n, char name[]);
 
 void column_free(dataColumn * data);
 
