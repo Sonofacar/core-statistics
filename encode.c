@@ -1,5 +1,38 @@
 #include "core.h"
 
+int compare_items(const void * x, const void * y)
+{
+	const char * str1 = *(const char **) x;
+	const char * str2 = *(const char **) y;
+	return strcmp(str1, str2);
+}
+
+int unique_categories(char ** column, int n, char *** dest)
+{
+	int output = 0;
+	char ** sorted;
+
+	// Copy strings
+	sorted = malloc(n * sizeof(char *));
+	for (int i = 0; i < n; i++) {
+		sorted[i] = strdup(column[i]);
+	}
+
+	// Sort values
+	qsort(sorted, n, sizeof(char *), compare_items);
+
+	// Pull out distinct values
+	for (int i = 0; i < n; i++) {
+		if (i == 0 || strcmp(sorted[i], sorted[i - 1])) {
+			(*dest)[output++] = strdup(sorted[i]);
+		}
+	}
+
+	free(sorted);
+
+	return output;
+}
+
 int no_encode(dataColumn * data, gsl_vector * response, int nrow)
 {
 	// Unused
