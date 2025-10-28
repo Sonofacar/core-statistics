@@ -173,20 +173,96 @@ static void test_detect_type_string(void **state)
 	assert_int_equal(detect_type(" + "), TYPE_STRING);
 }
 
+// translate_row_value
+static void test_translate_row_value_type_setting(void ** state)
+{
+	(void) state;
+	// TYPE_DOUBLE
+	int n = 1;
+	will_return_always(__wrap_malloc, false);
+	will_return_maybe(__wrap_gsl_vector_alloc, false);
+	ignore_function_calls(__wrap_free);
+	rowValue * row = __real_malloc(sizeof(rowValue));
+	row->value = "1";
+	row->nextValue = NULL;
+	dataColumn * data = column_alloc(n, "");
+	translate_row_value(row, data, n);
+	assert_int_equal(data->type, TYPE_DOUBLE);
+
+	// TYPE_STRING
+	row->value = "a";
+	data->nextColumn = column_alloc(n, "");
+	translate_row_value(row, data->nextColumn, n);
+	assert_int_equal(data->nextColumn->type, TYPE_STRING);
+
+	column_free(data);
+	__real_free(row);
+}
+
+static void test_translate_row_value_vector_update(void ** state)
+{
+	(void) state;
+	int n = 1;
+	will_return_always(__wrap_malloc, false);
+	will_return_maybe(__wrap_gsl_vector_alloc, false);
+	ignore_function_calls(__wrap_free);
+	rowValue * row = __real_malloc(sizeof(rowValue));
+	row->value = "123";
+	row->nextValue = NULL;
+	dataColumn * data = column_alloc(n, "");
+	translate_row_value(row, data, n);
+
+	assert_int_equal((int) gsl_vector_get(data->vector, 0), 123);
+
+	column_free(data);
+	__real_free(row);
+}
+
+static void test_translate_row_value_to_encode_update(void ** state)
+{
+	(void) state;
+	int n = 1;
+	will_return_always(__wrap_malloc, false);
+	will_return_maybe(__wrap_gsl_vector_alloc, false);
+	ignore_function_calls(__wrap_free);
+	rowValue * row = __real_malloc(sizeof(rowValue));
+	row->value = "a";
+	row->nextValue = NULL;
+	dataColumn * data = column_alloc(n, "");
+	translate_row_value(row, data, n);
+
+	assert_string_equal(data->to_encode[0], "a");
+
+	column_free(data);
+	__real_free(row);
+}
+
 int main(void) {
-	const struct CMUnitTest tests[] = {
+	const struct CMUnitTest column_alloc_test[] = {
 		cmocka_unit_test(test_column_alloc_not_null),
 		cmocka_unit_test(test_column_alloc_vector_size),
 		cmocka_unit_test(test_column_alloc_null_values),
 		cmocka_unit_test(test_column_alloc_oom),
+	};
+	const struct CMUnitTest column_free_test[] = {
 		cmocka_unit_test(test_column_free),
 		cmocka_unit_test(test_column_free_recursive),
 		cmocka_unit_test(test_column_free_large_recursive),
 		cmocka_unit_test(test_column_free_null),
 		cmocka_unit_test(test_column_free_partial_null),
+	};
+	const struct CMUnitTest detect_type_test[] = {
 		cmocka_unit_test(test_detect_type_double),
 		cmocka_unit_test(test_detect_type_string),
 	};
+	const struct CMUnitTest translate_row_value_test[] = {
+		cmocka_unit_test(test_translate_row_value_type_setting),
+		cmocka_unit_test(test_translate_row_value_vector_update),
+		cmocka_unit_test(test_translate_row_value_to_encode_update),
+	};
  
-	return cmocka_run_group_tests(tests, NULL, NULL);
+	return cmocka_run_group_tests(column_alloc_test, NULL, NULL) &
+		cmocka_run_group_tests(column_free_test, NULL, NULL) &
+		cmocka_run_group_tests(detect_type_test, NULL, NULL) &
+		cmocka_run_group_tests(translate_row_value_test, NULL, NULL);
 }
