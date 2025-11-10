@@ -201,19 +201,15 @@ int read_rows(char *** lines, FILE * input)
 	char * line = NULL;
 	char * p;
 	size_t len;
-	int capacity = 0;
 
 	// Read in the document
 	while (getline(&line, &len, input) != -1) {
 		// Reallocate if more memory is needed
-		if (nrow >= capacity) {
-			capacity = capacity == 0 ? 1 : capacity + sizeof(char *);
-			*lines = realloc(*lines, capacity * sizeof(char *));
-			if (!*lines) {
-				perror("Memory allocation failed");
-				free(line);
-				return 1;
-			}
+		*lines = realloc(*lines, (nrow + 1) * sizeof(char *));
+		if (!*lines) {
+			perror("Memory allocation failed");
+			free(line);
+			return 1;
 		}
 
 		// Clean the row string
