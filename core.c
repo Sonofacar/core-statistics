@@ -149,7 +149,7 @@ int process_row(dataColumn * data, size_t n, int row, char * line,
 		rowHead->value = "1";
 	}
 
-	// Continue to collect values for all other rows
+	// Continue to collect values for all other columns
 	while ((raw = strsep(&line, ","))) {
 		rowHead->nextValue = malloc(sizeof(rowValue));
 		rowHead = rowHead->nextValue;
