@@ -237,6 +237,83 @@ static void test_translate_row_value_to_encode_update(void ** state)
 	__real_free(row);
 }
 
+// process_row
+static void test_process_row_initialize_columns(void ** state)
+{
+	(void) state;
+	int n = 1;
+	char * line = strdup("a,b,c");
+	will_return_always(__wrap_malloc, false);
+	will_return_maybe(__wrap_gsl_vector_alloc, false);
+	ignore_function_calls(__wrap_free);
+	dataColumn * data = column_alloc(n, "");
+	dataColumn * p = data;
+
+	// The line results in 4 columns including the intercept
+	process_row(data, n, 0, line, true);
+	for (int i = 0; i < 4; i++) {
+		assert_non_null(p);
+		p = p->nextColumn;
+	}
+	assert_null(p);
+
+	column_free(data);
+}
+
+static void test_process_row_return_n_columns(void ** state)
+{
+	(void) state;
+	int n = 1;
+	char * line = strdup("a,b,c");
+	will_return_always(__wrap_malloc, false);
+	will_return_maybe(__wrap_gsl_vector_alloc, false);
+	ignore_function_calls(__wrap_free);
+	dataColumn * data = column_alloc(n, "");
+
+	assert_int_equal(process_row(data, n, 0, line, true), 3);
+
+	column_free(data);
+}
+
+static void test_process_row_null_input(void ** state)
+{
+	(void) state;
+	int n = 1;
+	char * line = strdup("");
+	will_return_always(__wrap_malloc, false);
+	will_return_maybe(__wrap_gsl_vector_alloc, false);
+	ignore_function_calls(__wrap_free);
+	dataColumn * data = column_alloc(n, "");
+
+	assert_int_equal(process_row(data, n, 0, line, true), 1);
+
+	column_free(data);
+}
+
+static void test_process_row_insert_intercept(void ** state)
+{
+	(void) state;
+	int n = 1;
+	int i;
+	char * line = strdup("a,b,c");
+	will_return_always(__wrap_malloc, false);
+	will_return_maybe(__wrap_gsl_vector_alloc, false);
+	ignore_function_calls(__wrap_free);
+	dataColumn * data = column_alloc(n, "");
+
+	// Check intercept name
+	process_row(data, n, 0, line, true);
+	assert_string_equal(data->nextColumn->name, "intercept");
+
+	// Check intercept value
+	line = strdup("3,3,3");
+	process_row(data, n, 1, line, false);
+	i = gsl_vector_get(data->nextColumn->vector, 0);
+	assert_int_equal(i, 1);
+
+	column_free(data);
+}
+
 int main(void) {
 	const struct CMUnitTest column_alloc_test[] = {
 		cmocka_unit_test(test_column_alloc_not_null),
@@ -260,9 +337,16 @@ int main(void) {
 		cmocka_unit_test(test_translate_row_value_vector_update),
 		cmocka_unit_test(test_translate_row_value_to_encode_update),
 	};
+	const struct CMUnitTest process_row_test[] = {
+		cmocka_unit_test(test_process_row_initialize_columns),
+		cmocka_unit_test(test_process_row_return_n_columns),
+		cmocka_unit_test(test_process_row_null_input),
+		cmocka_unit_test(test_process_row_insert_intercept),
+	};
  
 	return cmocka_run_group_tests(column_alloc_test, NULL, NULL) &
 		cmocka_run_group_tests(column_free_test, NULL, NULL) &
 		cmocka_run_group_tests(detect_type_test, NULL, NULL) &
-		cmocka_run_group_tests(translate_row_value_test, NULL, NULL);
+		cmocka_run_group_tests(translate_row_value_test, NULL, NULL) &
+		cmocka_run_group_tests(process_row_test, NULL, NULL);
 }
