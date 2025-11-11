@@ -246,6 +246,7 @@ int main(int argc, char *argv[])
 
 	// Parse incoming csv file
 	nrow = read_rows(&lines, input);
+	fclose(input);
 	columnHead = column_alloc(nrow, "");
 	switch(encoding) {
 		case ENCODE_DUMMY:
