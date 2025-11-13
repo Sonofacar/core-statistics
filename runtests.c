@@ -314,6 +314,50 @@ static void test_process_row_insert_intercept(void ** state)
 	column_free(data);
 }
 
+// read_rows
+static void test_read_rows_number(void ** state)
+{
+	int nrow;
+	char ** lines = NULL;
+        char * input_str = "a,b,c\n1,2,3\n4,5,6\n7,8,9\n";
+        FILE * input = fmemopen(input_str, strlen(input_str), "r");
+
+	ignore_function_calls(__wrap_free);
+	nrow = read_rows(&lines, input);
+	assert_int_equal(nrow, 3); // outputs number of data rows
+	free(lines);
+	fclose(input);
+}
+
+static void test_read_rows_null_input(void ** state)
+{
+	int nrow;
+	char ** lines = NULL;
+        char * input_str = "";
+        FILE * input = fmemopen(input_str, strlen(input_str), "r");
+
+	ignore_function_calls(__wrap_free);
+	nrow = read_rows(&lines, input);
+	assert_int_equal(nrow, 0);
+	free(lines);
+	fclose(input);
+}
+
+static void test_read_rows_carriage_return(void ** state)
+{
+	int nrow;
+	char ** lines = NULL;
+        char * input_str = "a,b,c\r\n1,2,3\r\n4,5,6\r\n7,8,9\r\n";
+        FILE * input = fmemopen(input_str, strlen(input_str), "r");
+
+	ignore_function_calls(__wrap_free);
+	nrow = read_rows(&lines, input);
+	assert_int_equal(nrow, 3);
+	assert_string_not_equal(*lines + strlen(*lines) - 1, "\r");
+	free(lines);
+	fclose(input);
+}
+
 int main(void) {
 	const struct CMUnitTest column_alloc_test[] = {
 		cmocka_unit_test(test_column_alloc_not_null),
@@ -343,10 +387,16 @@ int main(void) {
 		cmocka_unit_test(test_process_row_null_input),
 		cmocka_unit_test(test_process_row_insert_intercept),
 	};
+	const struct CMUnitTest read_rows_test[] = {
+		cmocka_unit_test(test_read_rows_number),
+		cmocka_unit_test(test_read_rows_carriage_return),
+		cmocka_unit_test(test_read_rows_null_input),
+	};
  
 	return cmocka_run_group_tests(column_alloc_test, NULL, NULL) &
 		cmocka_run_group_tests(column_free_test, NULL, NULL) &
 		cmocka_run_group_tests(detect_type_test, NULL, NULL) &
 		cmocka_run_group_tests(translate_row_value_test, NULL, NULL) &
-		cmocka_run_group_tests(process_row_test, NULL, NULL);
+		cmocka_run_group_tests(process_row_test, NULL, NULL) &
+		cmocka_run_group_tests(read_rows_test, NULL, NULL);
 }
