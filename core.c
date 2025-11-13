@@ -219,6 +219,8 @@ int read_rows(char *** lines, FILE * input)
 		// Clean the row string
 		p = strrchr(line, '\n');
 		if (p) *p = '\0';
+		p = strrchr(line, '\r');
+		if (p) *p = '\0';
 		(*lines)[nrow] = strdup(line);
 
 		if (!(*lines)[nrow]) {
