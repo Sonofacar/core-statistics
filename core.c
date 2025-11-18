@@ -172,7 +172,7 @@ int process_row(dataColumn * data, size_t n, int row, char * line,
 	} else {
 		ncol = 0;
 
-		while (rowHead) {
+		while (rowHead && colHead) {
 			translate_row_value(rowHead, colHead, row);
 
 			colHead = colHead->nextColumn;
@@ -181,7 +181,14 @@ int process_row(dataColumn * data, size_t n, int row, char * line,
 			ncol ++;
 		}
 		
-		ncol--;
+		/*
+		 * Only adjust the column value if no more values are in row.
+		 * If there are more, it must be caused by excess columns in
+		 * this row and an error will come up later.
+		 */
+		if (!rowHead) {
+			ncol--;
+		}
 	}
 
 	// Free memory
@@ -255,7 +262,6 @@ int read_columns(dataColumn * colHead, char ** lines, encode_func fn, int nrow)
 			ncol = process_row(colHead, nrow, i, lines[i], true);
 		} else if ((process_row(colHead, nrow, i, lines[i], false))
 				!= ncol) {
-			perror("Inconsistent number of columns.");
 			return -1;
 		}
 	}
