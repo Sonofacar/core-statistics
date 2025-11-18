@@ -317,6 +317,7 @@ static void test_process_row_insert_intercept(void ** state)
 // read_rows
 static void test_read_rows_number(void ** state)
 {
+	(void) state;
 	int nrow;
 	char ** lines = NULL;
         char * input_str = "a,b,c\n1,2,3\n4,5,6\n7,8,9\n";
@@ -331,6 +332,7 @@ static void test_read_rows_number(void ** state)
 
 static void test_read_rows_null_input(void ** state)
 {
+	(void) state;
 	int nrow;
 	char ** lines = NULL;
         char * input_str = "";
@@ -345,6 +347,7 @@ static void test_read_rows_null_input(void ** state)
 
 static void test_read_rows_carriage_return(void ** state)
 {
+	(void) state;
 	int nrow;
 	char ** lines = NULL;
         char * input_str = "a,b,c\r\n1,2,3\r\n4,5,6\r\n7,8,9\r\n";
@@ -354,6 +357,96 @@ static void test_read_rows_carriage_return(void ** state)
 	nrow = read_rows(&lines, input);
 	assert_int_equal(nrow, 3);
 	assert_string_not_equal(*lines + strlen(*lines) - 1, "\r");
+	free(lines);
+	fclose(input);
+}
+
+// read_columns
+static void test_read_columns_column_number(void ** state)
+{
+	(void) state;
+	int nrow, ncol;
+	char ** lines = NULL;
+        char * input_str = "a,b,c\n1,2,3\n4,5,6\n7,8,9\n";
+        FILE * input = fmemopen(input_str, strlen(input_str), "r");
+
+	ignore_function_calls(__wrap_free);
+	will_return_always(__wrap_malloc, false);
+	will_return_maybe(__wrap_gsl_vector_alloc, false);
+	nrow = read_rows(&lines, input);
+	dataColumn * columnHead = column_alloc(nrow, "");
+	ncol = read_columns(columnHead, lines, NULL, nrow);
+	assert_int_equal(ncol, 3);
+
+	column_free(columnHead);
+	free(lines);
+	fclose(input);
+}
+
+static void test_read_columns_error_return(void ** state)
+{
+	(void) state;
+	int nrow, ncol;
+	char ** lines = NULL;
+        char * input_str = "a,b,c\n1,2\n";
+        FILE * input = fmemopen(input_str, strlen(input_str), "r");
+
+	// Test with too few columns
+	ignore_function_calls(__wrap_free);
+	will_return_always(__wrap_malloc, false);
+	will_return_maybe(__wrap_gsl_vector_alloc, false);
+	nrow = read_rows(&lines, input);
+	dataColumn * columnHead = column_alloc(nrow, "");
+	ncol = read_columns(columnHead, lines, NULL, nrow);
+	assert_int_equal(ncol, -1);
+
+	column_free(columnHead);
+	free(lines);
+	fclose(input);
+
+	// Test with too many columns
+        input_str = "a,b,c\n1,2,3,4\n";
+        input = fmemopen(input_str, strlen(input_str), "r");
+
+	nrow = read_rows(&lines, input);
+	columnHead = column_alloc(nrow, "");
+	ncol = read_columns(columnHead, lines, NULL, nrow);
+	assert_int_equal(ncol, -1);
+
+	column_free(columnHead);
+	free(lines);
+	fclose(input);
+}
+
+int fake_encode(dataColumn * data, gsl_vector * response, int nrow)
+{
+	(void) data;
+	(void) response;
+	(void) nrow;
+	function_called();
+	return 0;
+}
+
+static void test_read_columns_call_encode(void ** state)
+{
+	(void) state;
+	int nrow, ncol;
+	char ** lines = NULL;
+        char * input_str = "a,b,c\nd,e,f\n";
+        FILE * input = fmemopen(input_str, strlen(input_str), "r");
+
+	// Test with too few columns
+	ignore_function_calls(__wrap_free);
+	will_return_always(__wrap_malloc, false);
+	will_return_maybe(__wrap_gsl_vector_alloc, false);
+	nrow = read_rows(&lines, input);
+	dataColumn * columnHead = column_alloc(nrow, "");
+
+	expect_function_calls(fake_encode, 3);
+	ncol = read_columns(columnHead, lines, fake_encode, nrow);
+	(void) ncol;
+
+	column_free(columnHead);
 	free(lines);
 	fclose(input);
 }
@@ -392,11 +485,17 @@ int main(void) {
 		cmocka_unit_test(test_read_rows_carriage_return),
 		cmocka_unit_test(test_read_rows_null_input),
 	};
+	const struct CMUnitTest read_columns_test[] = {
+		cmocka_unit_test(test_read_columns_column_number),
+		cmocka_unit_test(test_read_columns_error_return),
+		cmocka_unit_test(test_read_columns_call_encode),
+	};
  
 	return cmocka_run_group_tests(column_alloc_test, NULL, NULL) &
 		cmocka_run_group_tests(column_free_test, NULL, NULL) &
 		cmocka_run_group_tests(detect_type_test, NULL, NULL) &
 		cmocka_run_group_tests(translate_row_value_test, NULL, NULL) &
 		cmocka_run_group_tests(process_row_test, NULL, NULL) &
-		cmocka_run_group_tests(read_rows_test, NULL, NULL);
+		cmocka_run_group_tests(read_rows_test, NULL, NULL) &
+		cmocka_run_group_tests(read_columns_test, NULL, NULL);
 }
