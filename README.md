@@ -18,12 +18,12 @@ To-do list:
 		- encode categories
 			- [X] dummy encoding
 			- [X] target encoding
-- [ ] Write tests
+- [X] Write tests
 - [X] Verify memory usage is correct
 - [ ] lm (linear model)
 	- [X] Create a useful linear model
 	- [X] Create command line options
-		- [o] Dynamic output
+		- [X] Dynamic output
 			- giving name outputs model file
                 - coefficients w/ names
                 - options print model diagnostics to stdout
