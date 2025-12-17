@@ -451,6 +451,15 @@ static void test_read_columns_call_encode(void ** state)
 	fclose(input);
 }
 
+// log_offset and exp_offset
+static void test_log_offset_transform(void ** state)
+{
+	(void) state;
+	double a, b = 0;
+	b = exp_offset(log_offset(b));
+	assert_int_equal(a, b);
+}
+
 int main(void) {
 	const struct CMUnitTest column_alloc_test[] = {
 		cmocka_unit_test(test_column_alloc_not_null),
@@ -490,6 +499,9 @@ int main(void) {
 		cmocka_unit_test(test_read_columns_error_return),
 		cmocka_unit_test(test_read_columns_call_encode),
 	};
+	const struct CMUnitTest offset_transform_test[] = {
+		cmocka_unit_test(test_log_offset_transform),
+	};
  
 	return cmocka_run_group_tests(column_alloc_test, NULL, NULL) &
 		cmocka_run_group_tests(column_free_test, NULL, NULL) &
@@ -497,5 +509,6 @@ int main(void) {
 		cmocka_run_group_tests(translate_row_value_test, NULL, NULL) &
 		cmocka_run_group_tests(process_row_test, NULL, NULL) &
 		cmocka_run_group_tests(read_rows_test, NULL, NULL) &
-		cmocka_run_group_tests(read_columns_test, NULL, NULL);
+		cmocka_run_group_tests(read_columns_test, NULL, NULL) &
+		cmocka_run_group_tests(offset_transform_test, NULL, NULL);
 }
