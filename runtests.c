@@ -5,6 +5,10 @@
 #include <setjmp.h>
 #include <cmocka.h>
 
+// Test memory allocation
+#define UNIT_TESTING 1
+#define ALLOCATION_TESTING 1
+
 // dataColumn functions
 static void test_column_alloc_not_null(void **state)
 {
