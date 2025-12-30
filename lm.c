@@ -266,7 +266,9 @@ int main(int argc, char *argv[])
 	nrow -= testRows;
 	fclose(input);
 	columnHead = column_alloc(nrow, "");
-	testData = column_alloc(testRows, "");
+	if (testRows > 0) {
+		testData = column_alloc(testRows, "");
+	}
 	switch(encoding) {
 		case ENCODE_DUMMY:
 			ncol = read_columns(columnHead, lines, dummy_encode,
@@ -413,6 +415,7 @@ int main(int argc, char *argv[])
 	}
 
 	// Free memory
+	column_free(testData);
 	free(colNames);
 	gsl_vector_free(coef);
 	gsl_vector_free(pVals);
