@@ -102,6 +102,10 @@ int read_rows(char *** lines, FILE * input);
 
 int read_columns(dataColumn * colHead, char ** lines, encode_func, int nrow);
 
+bool includes_int(int array[], int length, int value);
+
+int test_split(char *** trainLines, char *** testLines, double ratio, int nrow);
+
 int arrange_data(dataColumn * columnHead, gsl_matrix * dataMatrix, int ncol);
 
 double log_offset(double d);

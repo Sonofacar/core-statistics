@@ -214,7 +214,7 @@ int read_rows(char *** lines, FILE * input)
 	while (getline(&line, &len, input) != -1) {
 		// Reallocate if more memory is needed
 		if (nrow >= capacity) {
-			capacity = capacity == 0 ? 1 : capacity + sizeof(char *);
+			capacity = capacity == 0 ? 1 : capacity + 100;
 			*lines = realloc(*lines, capacity * sizeof(char *));
 			if (!*lines) {
 				perror("Memory allocation failed");
@@ -278,6 +278,58 @@ int read_columns(dataColumn * colHead, char ** lines, encode_func fn, int nrow)
 	ncol = ncol + addedCols;
 
 	return ncol;
+}
+
+bool includes_int(int array[], int length, int value) {
+	for (int i = 0; i < length; i++) {
+		if (array[i] == value) return true;
+	}
+
+	return false;
+}
+
+int test_split(char *** trainLines, char *** testLines, double ratio, int nrow)
+{
+	int testRows;
+	int tmp;
+
+	if (ratio > 1 || ratio < 0) {
+		return 0;
+	}
+
+	// Get selection of random integers
+	testRows = ratio * nrow;
+	int selections[testRows];
+	for (int i = 0; i < testRows; i++) {
+		tmp = rand() % (nrow - 1) + 1;
+		while (includes_int(selections, testRows, tmp)) {
+			tmp = rand() % (nrow - 1) + 1; // Cannot be row 0
+		}
+		selections[i] = tmp;
+	}
+
+	// Place selected lines into new buffer
+	*testLines = malloc((testRows + 1) * sizeof(char *));
+	(*testLines)[0] = (*trainLines)[0];
+	int j = 0;
+	for (int i = 0; i < nrow; i++) {
+		if (includes_int(selections, testRows, i)) {
+			(*testLines)[j + 1] = (*trainLines)[i + 1];
+			j++;
+		}
+	}
+
+	// Remove selected lines from old buffer
+	int k = 0;
+	for (int i = 0; i < testRows; i++) {
+		for (int j = selections[i]; j < nrow - k; j++) { 
+			(*trainLines)[j] = (*trainLines)[j + 1];
+		}
+		k++;
+	}
+	*trainLines = realloc(*trainLines, (nrow - testRows + 1) * sizeof(char *));
+
+	return testRows;
 }
 
 int arrange_data(dataColumn * columnHead, gsl_matrix * dataMatrix, int ncol)

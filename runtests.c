@@ -455,6 +455,84 @@ static void test_read_columns_call_encode(void ** state)
 	fclose(input);
 }
 
+// includes_int
+static void test_includes_int(void ** state)
+{
+	(void) state;
+	int a[6] = { 1, 2, 3, 4, 5, 6, };
+
+	assert_true(includes_int(a, 6, 1));
+	assert_false(includes_int(a, 6, 0));
+}
+
+// test_split
+static void test_test_split_correct(void ** state)
+{
+	(void) state;
+	int nrow, testRows;
+	double testRatio;
+	char ** lines = NULL;
+	char ** testLines = NULL;
+        char * input_str = "a,b,c\n1,2,3\n4,5,6\n7,8,9\n10,11,12\n";
+        FILE * input = fmemopen(input_str, strlen(input_str), "r");
+	ignore_function_calls(__wrap_free);
+	will_return_always(__wrap_malloc, false);
+
+	nrow = read_rows(&lines, input);
+	testRatio = 0.5;
+	testRows = test_split(&lines, &testLines, testRatio, nrow);
+	assert_int_equal(testRows, 2);
+	free(lines);
+	fclose(input);
+}
+
+static void test_test_split_invalid_range(void ** state)
+{
+	(void) state;
+	int nrow, testRows;
+	double testRatio;
+	char ** lines = NULL;
+	char ** testLines = NULL;
+        char * input_str = "a,b,c\n1,2,3\n4,5,6\n7,8,9\n";
+        FILE * input = fmemopen(input_str, strlen(input_str), "r");
+	ignore_function_calls(__wrap_free);
+
+	nrow = read_rows(&lines, input);
+	testRatio = -1;
+	testRows = test_split(&lines, &testLines, testRatio, nrow);
+	assert_int_equal(testRows, 0);
+	free(lines);
+	fclose(input);
+
+	input = fmemopen(input_str, strlen(input_str), "r");
+	nrow = read_rows(&lines, input);
+	testRatio = 2;
+	testRows = test_split(&lines, &testLines, testRatio, nrow);
+	assert_int_equal(testRows, 0);
+	free(lines);
+	fclose(input);
+}
+
+static void test_test_split_round_ratio(void ** state)
+{
+	(void) state;
+	int nrow, testRows;
+	double testRatio;
+	char ** lines = NULL;
+	char ** testLines = NULL;
+        char * input_str = "a,b,c\n1,2,3\n4,5,6\n7,8,9\n";
+        FILE * input = fmemopen(input_str, strlen(input_str), "r");
+	ignore_function_calls(__wrap_free);
+	will_return_always(__wrap_malloc, false);
+
+	nrow = read_rows(&lines, input);
+	testRatio = 0.5;
+	testRows = test_split(&lines, &testLines, testRatio, nrow);
+	assert_int_equal(testRows, 1);
+	free(lines);
+	fclose(input);
+}
+
 // log_offset and exp_offset
 static void test_log_offset_transform(void ** state)
 {
@@ -503,6 +581,14 @@ int main(void) {
 		cmocka_unit_test(test_read_columns_error_return),
 		cmocka_unit_test(test_read_columns_call_encode),
 	};
+	const struct CMUnitTest includes_int_test[] = {
+		cmocka_unit_test(test_includes_int),
+	};
+	const struct CMUnitTest test_split_test[] = {
+		cmocka_unit_test(test_test_split_correct),
+		cmocka_unit_test(test_test_split_invalid_range),
+		cmocka_unit_test(test_test_split_round_ratio),
+	};
 	const struct CMUnitTest offset_transform_test[] = {
 		cmocka_unit_test(test_log_offset_transform),
 	};
@@ -514,5 +600,7 @@ int main(void) {
 		cmocka_run_group_tests(process_row_test, NULL, NULL) &
 		cmocka_run_group_tests(read_rows_test, NULL, NULL) &
 		cmocka_run_group_tests(read_columns_test, NULL, NULL) &
+		cmocka_run_group_tests(includes_int_test, NULL, NULL) &
+		cmocka_run_group_tests(test_split_test, NULL, NULL) &
 		cmocka_run_group_tests(offset_transform_test, NULL, NULL);
 }

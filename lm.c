@@ -1,6 +1,7 @@
 #include <gsl/gsl_multifit.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <time.h>
 #include "core.h"
 
 // Field 2:
@@ -16,6 +17,7 @@ static struct option longOptions[] = {
 	{"log", 0, NULL, 'l'},
 	{"log-offset", 0, NULL, 'L'},
 	{"name", 1, NULL, 'n'},
+	{"test-ratio", 1, NULL, 's'},
 	{"aic", 0, NULL, 'a'},
 	{"bic", 0, NULL, 'b'},
 	{"r-squared", 0, NULL, 'r'},
@@ -32,11 +34,13 @@ int main(int argc, char *argv[])
 	char * name = "";
 	FILE * input = stdin;
 	diagnoseType output = ALL;
+	double testRatio = 0;
 
 	// Model variables
 	int status;
 	int nrow;
 	int ncol;
+	int testRows;
 	double chisq;
 	double rsq;
 	double adjRSQ;
@@ -45,8 +49,10 @@ int main(int argc, char *argv[])
 	double aic;
 	double bic;
 	char ** lines = NULL;
+	char ** testLines = NULL;
 	char ** colNames = NULL;
 	dataColumn * columnHead;
+	dataColumn * testData;
 	dataColumn * colPtr;
 	gsl_vector * response;
 	gsl_vector * meanResponse;
@@ -57,7 +63,7 @@ int main(int argc, char *argv[])
 	gsl_matrix * covMatrix;
 	gsl_multifit_linear_workspace * work;
 
-	while ((opt = getopt_long_only(argc, argv, ":hi:dtTlLn:abrRf",
+	while ((opt = getopt_long_only(argc, argv, ":hi:dtTlLn:s:abrRf",
 		longOptions, NULL)) != -1) {
 		switch(opt) {
 			case 'h':
@@ -186,6 +192,13 @@ int main(int argc, char *argv[])
 				name = strdup(optarg);
 				break;
 
+			case 's':
+				sscanf(optarg, "%lf", &testRatio);
+				if ((0 > testRatio) || (1 < testRatio)) {
+					testRatio = 0;
+				}
+				break;
+
 			case 'a':
 				if (output == ALL) {
 					output = AIC;
@@ -244,29 +257,47 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	// Set random seed
+	srand(time(NULL));
+
 	// Parse incoming csv file
 	nrow = read_rows(&lines, input);
+	testRows = test_split(&lines, &testLines, testRatio, nrow);
+	nrow -= testRows;
 	fclose(input);
 	columnHead = column_alloc(nrow, "");
+	testData = column_alloc(testRows, "");
 	switch(encoding) {
 		case ENCODE_DUMMY:
 			ncol = read_columns(columnHead, lines, dummy_encode,
 					nrow);
+			if (testRows > 0) {
+				read_columns(testData, testLines, no_encode, testRows);
+			}
 			break;
 
 		case ENCODE_MEAN_TARGET:
 			ncol = read_columns(columnHead, lines,
 		       			mean_target_encode, nrow);
+			if (testRows > 0) {
+				read_columns(testData, testLines, no_encode, testRows);
+			}
 			break;
 
 		case ENCODE_MEDIAN_TARGET:
 			ncol = read_columns(columnHead, lines,
 		       			median_target_encode, nrow);
+			if (testRows > 0) {
+				read_columns(testData, testLines, no_encode, testRows);
+			}
 			break;
 
 		case ENCODE_NONE:
 			ncol = read_columns(columnHead, lines, no_encode,
 					nrow);
+			if (testRows > 0) {
+				read_columns(testData, testLines, no_encode, testRows);
+			}
 			break;
 	}
 	dataMatrix = gsl_matrix_alloc(nrow, ncol);
@@ -284,8 +315,8 @@ int main(int argc, char *argv[])
 
 	// We cannot make a model with more columns than rows
 	if (nrow < ncol) {
-		fprintf(stderr, "More columns than rows; remove columns or"
-				"change encoding method.\n");
+		fprintf(stderr, "More columns than rows; check encoding "
+	  			"method or test ratio.\n");
 		exit(EXIT_FAILURE);
 	}
 

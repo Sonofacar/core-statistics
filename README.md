@@ -25,8 +25,8 @@ To-do list:
 	- [X] Create command line options
 		- [X] Dynamic output
 			- giving name outputs model file
-                - coefficients w/ names
-                - options print model diagnostics to stdout
+				- coefficients w/ names
+				- options print model diagnostics to stdout
 			- no name prints summary to stdout
 		- [ ] train/test sets?
 		- [X] transformation of response variable
