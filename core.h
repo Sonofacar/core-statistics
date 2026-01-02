@@ -73,7 +73,15 @@ typedef enum {
 	F_STATISTIC
 } diagnoseType;
 
-typedef int (encode_func)(dataColumn * data, gsl_vector * response, int nrow);
+typedef struct encodeData {
+	char * columnName;
+	char ** textValues;
+	struct encodeData * nextEncoding;
+	double * numValues;
+} encodeData;
+
+typedef int (encode_func)(dataColumn * data, gsl_vector * response, int nrow,
+			  encodeData ** encoding);
 
 dataColumn * column_alloc(int n, char name[]);
 
@@ -90,17 +98,22 @@ int compare_items(const void * x, const void * y);
 
 int unique_categories(char ** column, int n, char *** dest);
 
-int no_encode(dataColumn * data, gsl_vector * response, int nrow);
+int no_encode(dataColumn * data, gsl_vector * response, int nrow,
+	      encodeData ** encoding);
 
-int dummy_encode(dataColumn * data, gsl_vector * response, int nrow);
+int dummy_encode(dataColumn * data, gsl_vector * response, int nrow,
+		 encodeData ** encoding);
 
-int mean_target_encode(dataColumn * data, gsl_vector * response, int nrow);
+int mean_target_encode(dataColumn * data, gsl_vector * response, int nrow,
+		       encodeData ** encoding);
 
-int median_target_encode(dataColumn * data, gsl_vector * response, int nrow);
+int median_target_encode(dataColumn * data, gsl_vector * response, int nrow,
+			 encodeData ** encoding);
 
 int read_rows(char *** lines, FILE * input);
 
-int read_columns(dataColumn * colHead, char ** lines, encode_func, int nrow);
+int read_columns(dataColumn * colHead, char ** lines, encode_func fn, int nrow,
+		 encodeData ** encoding);
 
 bool includes_int(int array[], int length, int value);
 

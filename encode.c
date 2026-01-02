@@ -33,25 +33,27 @@ int unique_categories(char ** column, int n, char *** dest)
 	return output;
 }
 
-int no_encode(dataColumn * data, gsl_vector * response, int nrow)
+int no_encode(dataColumn * data, gsl_vector * response, int nrow,
+	      encodeData ** encoding)
 {
 	// Unused
 	(void)data;
 	(void)response;
 	(void)nrow;
+	(void)encoding;
 
 	return 0;
 }
 
-int dummy_encode(dataColumn * data, gsl_vector * response, int nrow)
+int dummy_encode(dataColumn * data, gsl_vector * response, int nrow,
+		 encodeData ** encoding)
 {
 	// unused
 	(void)response;
 
-	char ** categories;
 	dataColumn * head;
 	dataColumn * remaining;
-	char * name = data->name;
+	char * name = strdup(data->name);
 	int ncat;
 	double value;
 	int newCols = 0;
@@ -60,8 +62,18 @@ int dummy_encode(dataColumn * data, gsl_vector * response, int nrow)
 	remaining = data->nextColumn;
 
 	// Find all categories
-	categories = malloc(nrow * sizeof(char *));
-	ncat = unique_categories(data->to_encode, nrow, &categories);
+	if (*encoding) {
+		// Found encoding
+		ncat = unique_categories(data->to_encode, nrow,
+			   &((*encoding)->textValues));
+	} else {
+		// Initialize encoding
+		*encoding = malloc(sizeof(encodeData));
+		(*encoding)->columnName = data->name;
+		(*encoding)->textValues = malloc(nrow * sizeof(char *));
+		ncat = unique_categories(data->to_encode, nrow,
+			   &((*encoding)->textValues));
+	}
 
 	// Construct new columns
 	head = data;
@@ -72,15 +84,16 @@ int dummy_encode(dataColumn * data, gsl_vector * response, int nrow)
 			newCols++;
 		}
 
-		head->name = realloc(head->name, sizeof(*head->name)
-				+ sizeof("_") + sizeof(categories[i]));
+		head->name = realloc(head->name, sizeof(*head->name) +
+		       sizeof("_") + sizeof((*encoding)->textValues[i]));
 		strcat(head->name, "_");
-		strcat(head->name, categories[i]);
+		strcat(head->name, (*encoding)->textValues[i]);
 		head->type = TYPE_DOUBLE;
 
 		// Set vector
 		for (int j = 0; j < nrow; j++) {
-			if (strcmp(data->to_encode[j], categories[i]) == 0) {
+			if (strcmp(data->to_encode[j],
+	      			(*encoding)->textValues[i]) == 0) {
 				value = 1;
 			} else {
 				value = 0;
@@ -92,48 +105,60 @@ int dummy_encode(dataColumn * data, gsl_vector * response, int nrow)
 	// Link back to what remains of original data
 	head->nextColumn = remaining;
 
-	// Free memory
-	free(categories);
+	free(name);
 
 	return newCols;
 }
 
-int mean_target_encode(dataColumn * data, gsl_vector * response, int nrow)
+int mean_target_encode(dataColumn * data, gsl_vector * response, int nrow,
+		       encodeData ** encoding)
 {
-	char ** categories;
+	*encoding = NULL;
 	int ncat;
 	int i, j, n;
-	double mean;
 	double sum;
 	double * ptrs[nrow];
+	encodeData * tmpEncoding;
 
 	// Find all categories
-	categories = malloc(nrow * sizeof(char *));
-	ncat = unique_categories(data->to_encode, nrow, &categories);
+	if (*encoding) {
+		// Found encoding
+		ncat = unique_categories(data->to_encode, nrow,
+			   &((*encoding)->textValues));
+	} else {
+		// Initialize encoding
+		tmpEncoding = malloc(sizeof(encodeData));
+		tmpEncoding->columnName = data->name;
+		tmpEncoding->textValues = malloc(nrow * sizeof(char *));
+		ncat = unique_categories(data->to_encode, nrow,
+			   &(tmpEncoding->textValues));
+		tmpEncoding->numValues = malloc(ncat * sizeof(double));
+	}
 
 	// Calculate target means
 	for (i = 0; i < ncat; i++) {
 		// add value to set
 		n = 0;
 		for (j = 0; j < nrow; j++) {
-			if (strcmp(data->to_encode[j], categories[i]) == 0) {
+			if (strcmp(data->to_encode[j],
+ 					tmpEncoding->textValues[i]) == 0) {
 				ptrs[n++] = gsl_vector_ptr(data->vector, j);
-				sum += gsl_vector_get(response, j);
+				if (!*encoding) sum += gsl_vector_get(response,
+					  j);
 			}
 		}
 
 		// compute mean
-		mean = sum / n;
+		if (!*encoding) tmpEncoding->numValues[i] = sum / n;
 
 		// set values in output column
 		for (j = 0; j < n; j++) {
-			*ptrs[j] = mean;
+			*ptrs[j] = tmpEncoding->numValues[i];
 			ptrs[j] = NULL;
 		}
 	}
 
-	// Free memory
-	free(categories);
+	*encoding = tmpEncoding;
 
 	return 0;
 }
@@ -161,45 +186,55 @@ double median(double arr[], size_t n)
 	return med;
 }
 
-int median_target_encode(dataColumn * data, gsl_vector * response, int nrow)
+int median_target_encode(dataColumn * data, gsl_vector * response, int nrow,
+			 encodeData ** encoding)
 {
-	// Unused
-	(void)response;
-
-	char ** categories;
+	*encoding = NULL;
 	int ncat;
 	int i, j, n;
-	double med;
 	double * ptrs[nrow];
 	double vals[nrow];
+	encodeData * tmpEncoding;
 
 	// Find all categories
-	categories = malloc(nrow * sizeof(char *));
-	ncat = unique_categories(data->to_encode, nrow, &categories);
+	if (*encoding) {
+		// Found encoding
+		ncat = unique_categories(data->to_encode, nrow,
+			   &((*encoding)->textValues));
+	} else {
+		// Initialize encoding
+		tmpEncoding = malloc(sizeof(encodeData));
+		tmpEncoding->columnName = data->name;
+		tmpEncoding->textValues = malloc(nrow * sizeof(char *));
+		ncat = unique_categories(data->to_encode, nrow,
+			   &(tmpEncoding->textValues));
+		tmpEncoding->numValues = malloc(ncat * sizeof(double));
+	}
 
 	// Calculate target medians
 	for (i = 0; i < ncat; i++) {
 		// add value to set
 		n = 0;
 		for (j = 0; j < nrow; j++) {
-			if (strcmp(data->to_encode[j], categories[i]) == 0) {
+			if (strcmp(data->to_encode[j],
+ 					tmpEncoding->textValues[i]) == 0) {
 				vals[n] = gsl_vector_get(response, j);
 				ptrs[n++] = gsl_vector_ptr(data->vector, j);
 			}
 		}
 
 		// Compute median
-		med = median(vals, (size_t)n);
+		if (!*encoding) tmpEncoding->numValues[i] = median(vals,
+						     (size_t)n);
 
 		// set values in output column
 		for (j = 0; j < n; j++) {
-			*ptrs[j] = med;
+			*ptrs[j] = tmpEncoding->numValues[i];
 			ptrs[j] = NULL;
 		}
 	}
 
-	// Free memory
-	free(categories);
+	*encoding = tmpEncoding;
 
 	return 0;
 }

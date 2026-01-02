@@ -371,6 +371,7 @@ static void test_read_columns_column_number(void ** state)
 	(void) state;
 	int nrow, ncol;
 	char ** lines = NULL;
+	encodeData * encoding = NULL;
         char * input_str = "a,b,c\n1,2,3\n4,5,6\n7,8,9\n";
         FILE * input = fmemopen(input_str, strlen(input_str), "r");
 
@@ -379,7 +380,7 @@ static void test_read_columns_column_number(void ** state)
 	will_return_maybe(__wrap_gsl_vector_alloc, false);
 	nrow = read_rows(&lines, input);
 	dataColumn * columnHead = column_alloc(nrow, "");
-	ncol = read_columns(columnHead, lines, NULL, nrow);
+	ncol = read_columns(columnHead, lines, NULL, nrow, &encoding);
 	assert_int_equal(ncol, 3);
 
 	column_free(columnHead);
@@ -392,6 +393,7 @@ static void test_read_columns_error_return(void ** state)
 	(void) state;
 	int nrow, ncol;
 	char ** lines = NULL;
+	encodeData * encoding;
         char * input_str = "a,b,c\n1,2\n";
         FILE * input = fmemopen(input_str, strlen(input_str), "r");
 
@@ -401,7 +403,8 @@ static void test_read_columns_error_return(void ** state)
 	will_return_maybe(__wrap_gsl_vector_alloc, false);
 	nrow = read_rows(&lines, input);
 	dataColumn * columnHead = column_alloc(nrow, "");
-	ncol = read_columns(columnHead, lines, NULL, nrow);
+	encoding = malloc(sizeof(encodeData));
+	ncol = read_columns(columnHead, lines, NULL, nrow, &encoding);
 	assert_int_equal(ncol, -1);
 
 	column_free(columnHead);
@@ -413,20 +416,25 @@ static void test_read_columns_error_return(void ** state)
         input = fmemopen(input_str, strlen(input_str), "r");
 
 	nrow = read_rows(&lines, input);
+	free(encoding);
+	encoding = malloc(sizeof(encodeData));
 	columnHead = column_alloc(nrow, "");
-	ncol = read_columns(columnHead, lines, NULL, nrow);
+	ncol = read_columns(columnHead, lines, NULL, nrow, &encoding);
 	assert_int_equal(ncol, -1);
 
+	free(encoding);
 	column_free(columnHead);
 	free(lines);
 	fclose(input);
 }
 
-int fake_encode(dataColumn * data, gsl_vector * response, int nrow)
+int fake_encode(dataColumn * data, gsl_vector * response, int nrow,
+		encodeData ** encoding)
 {
 	(void) data;
 	(void) response;
 	(void) nrow;
+	(void) encoding;
 	function_called();
 	return 0;
 }
@@ -436,6 +444,7 @@ static void test_read_columns_call_encode(void ** state)
 	(void) state;
 	int nrow, ncol;
 	char ** lines = NULL;
+	encodeData * encoding;
         char * input_str = "a,b,c\nd,e,f\n";
         FILE * input = fmemopen(input_str, strlen(input_str), "r");
 
@@ -444,12 +453,14 @@ static void test_read_columns_call_encode(void ** state)
 	will_return_always(__wrap_malloc, false);
 	will_return_maybe(__wrap_gsl_vector_alloc, false);
 	nrow = read_rows(&lines, input);
+	encoding = malloc(sizeof(encodeData));
 	dataColumn * columnHead = column_alloc(nrow, "");
 
 	expect_function_calls(fake_encode, 3);
-	ncol = read_columns(columnHead, lines, fake_encode, nrow);
+	ncol = read_columns(columnHead, lines, fake_encode, nrow, &encoding);
 	(void) ncol;
 
+	free(encoding);
 	column_free(columnHead);
 	free(lines);
 	fclose(input);

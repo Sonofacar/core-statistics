@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
 	char ** lines = NULL;
 	char ** testLines = NULL;
 	char ** colNames = NULL;
+	encodeData * encodingInfo;
 	dataColumn * columnHead;
 	dataColumn * testData;
 	dataColumn * colPtr;
@@ -266,39 +267,48 @@ int main(int argc, char *argv[])
 	nrow -= testRows;
 	fclose(input);
 	columnHead = column_alloc(nrow, "");
-	if (testRows > 0) {
-		testData = column_alloc(testRows, "");
-	}
+	testData = column_alloc(testRows, "");
 	switch(encoding) {
 		case ENCODE_DUMMY:
+			encodingInfo = NULL;
 			ncol = read_columns(columnHead, lines, dummy_encode,
-					nrow);
+					nrow, &encodingInfo);
 			if (testRows > 0) {
-				read_columns(testData, testLines, no_encode, testRows);
+				read_columns(testData, testLines, dummy_encode,
+		 			testRows, &encodingInfo);
 			}
 			break;
 
 		case ENCODE_MEAN_TARGET:
+			encodingInfo = NULL;
 			ncol = read_columns(columnHead, lines,
-		       			mean_target_encode, nrow);
+		       			mean_target_encode, nrow,
+		       			&encodingInfo);
 			if (testRows > 0) {
-				read_columns(testData, testLines, no_encode, testRows);
+				read_columns(testData, testLines,
+		 			mean_target_encode, testRows,
+		 			&encodingInfo);
 			}
 			break;
 
 		case ENCODE_MEDIAN_TARGET:
+			encodingInfo = NULL;
 			ncol = read_columns(columnHead, lines,
-		       			median_target_encode, nrow);
+		       			median_target_encode, nrow, &encodingInfo);
 			if (testRows > 0) {
-				read_columns(testData, testLines, no_encode, testRows);
+				read_columns(testData, testLines,
+		 			median_target_encode, testRows,
+		 			&encodingInfo);
 			}
 			break;
 
 		case ENCODE_NONE:
+			encodingInfo = NULL;
 			ncol = read_columns(columnHead, lines, no_encode,
-					nrow);
+					nrow, &encodingInfo);
 			if (testRows > 0) {
-				read_columns(testData, testLines, no_encode, testRows);
+				read_columns(testData, testLines, no_encode,
+		 			testRows, &encodingInfo);
 			}
 			break;
 	}

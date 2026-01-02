@@ -251,7 +251,7 @@ int read_rows(char *** lines, FILE * input)
 	return nrow;
 }
 
-int read_columns(dataColumn * colHead, char ** lines, encode_func fn, int nrow)
+int read_columns(dataColumn * colHead, char ** lines, encode_func fn, int nrow, encodeData ** encoding)
 {
 	int addedCols = 0;
 	int ncol = 0;
@@ -267,11 +267,27 @@ int read_columns(dataColumn * colHead, char ** lines, encode_func fn, int nrow)
 	}
 
 	// Encode categorical variables
-	while (p) {
-		if (p->to_encode) {
-			addedCols += fn(p, colHead->vector, nrow);
+	if (*encoding) {
+		// Encoding found
+		while (p) {
+			if (p->to_encode) {
+				addedCols += fn(p, colHead->vector, nrow, 
+		    			encoding);
+			}
+			p = p->nextColumn;
 		}
-		p = p->nextColumn;
+	} else {
+		// Create Encoding
+		encodeData * encodeHead = *encoding;
+		while (p) {
+			if (p->to_encode) {
+				addedCols += fn(p, colHead->vector, nrow,
+		    			&encodeHead);
+				encodeHead = encodeHead->nextEncoding;
+			}
+			p = p->nextColumn;
+		}
+		*encoding = encodeHead;
 	}
 
 	// Add new columns
@@ -293,7 +309,7 @@ int test_split(char *** trainLines, char *** testLines, double ratio, int nrow)
 	int testRows;
 	int tmp;
 
-	if (ratio > 1 || ratio < 0) {
+	if (ratio >= 1 || ratio < 0) {
 		return 0;
 	}
 
@@ -310,7 +326,7 @@ int test_split(char *** trainLines, char *** testLines, double ratio, int nrow)
 
 	// Place selected lines into new buffer
 	*testLines = malloc((testRows + 1) * sizeof(char *));
-	(*testLines)[0] = (*trainLines)[0];
+	(*testLines)[0] = strdup((*trainLines)[0]);
 	int j = 0;
 	for (int i = 0; i < nrow; i++) {
 		if (includes_int(selections, testRows, i)) {
