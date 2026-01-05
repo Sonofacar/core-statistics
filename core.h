@@ -70,7 +70,9 @@ typedef enum {
 	BIC,
 	R_SQUARED,
 	ADJ_R_SQUARED,
-	F_STATISTIC
+	F_STATISTIC,
+	RMSE,
+	MAE
 } diagnoseType;
 
 typedef struct encodeData {

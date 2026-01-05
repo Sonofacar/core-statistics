@@ -22,7 +22,9 @@ static struct option longOptions[] = {
 	{"bic", 0, NULL, 'b'},
 	{"r-squared", 0, NULL, 'r'},
 	{"adjusted-r-squared", 0, NULL, 'R'},
-	{"f-statistic", 0, NULL, 'f'}
+	{"f-statistic", 0, NULL, 'f'},
+	{"rmse", 0, NULL, 'm'},
+	{"mae", 0, NULL, 'M'}
 };
 
 int main(int argc, char *argv[])
@@ -48,6 +50,8 @@ int main(int argc, char *argv[])
 	double f;
 	double aic;
 	double bic;
+	double rmse;
+	double mae;
 	char ** lines = NULL;
 	char ** testLines = NULL;
 	char ** colNames = NULL;
@@ -60,11 +64,14 @@ int main(int argc, char *argv[])
 	gsl_vector * coef;
 	gsl_vector * st;
 	gsl_vector * pVals;
+	gsl_vector * testResponse;
+	gsl_vector * testResid;
 	gsl_matrix * dataMatrix;
 	gsl_matrix * covMatrix;
+	gsl_matrix * testMatrix;
 	gsl_multifit_linear_workspace * work;
 
-	while ((opt = getopt_long_only(argc, argv, ":hi:dtTlLn:s:abrRf",
+	while ((opt = getopt_long_only(argc, argv, ":hi:dtTlLn:s:abrRfmM",
 		longOptions, NULL)) != -1) {
 		switch(opt) {
 			case 'h':
@@ -131,6 +138,20 @@ int main(int argc, char *argv[])
 				printf("\t-r, --r-squared\n");
 				printf("\t-R, --adjusted-r-squared\n");
 				printf("\t-f, --f-statistic\n");
+				printf("\n");
+				printf("\tSome diagnostics also require a "
+	   				"train-test data split which can be "
+	   				"set\n");
+				printf("\twith the following command:\n");
+				printf("\n");
+				printf("\t-s, --test-ratio\n");
+				printf("\n");
+				printf("\tThe diagnostics train-test "
+	   				"splitting enables are the "
+	   				"following:\n");
+				printf("\n");
+				printf("\t-m, --rmse\n");
+				printf("\t-M, --mae\n");
 				return 1;
 				break;
 
@@ -243,6 +264,26 @@ int main(int argc, char *argv[])
 			case 'f':
 				if (output == ALL) {
 					output = F_STATISTIC;
+				} else {
+					fprintf(stderr, "Multiple diagnostics "
+	     					"specified. Using the "
+	     					"first.\n");
+				}
+				break;
+
+			case 'm':
+				if (output == ALL) {
+					output = RMSE;
+				} else {
+					fprintf(stderr, "Multiple diagnostics "
+	     					"specified. Using the "
+	     					"first.\n");
+				}
+				break;
+
+			case 'M':
+				if (output == ALL) {
+					output = MAE;
 				} else {
 					fprintf(stderr, "Multiple diagnostics "
 	     					"specified. Using the "
@@ -385,6 +426,26 @@ int main(int argc, char *argv[])
 	aic = nrow * log(log(2 * M_PI) + 1 + chisq / nrow) + 2 * ncol;
 	bic = nrow * log(log(2 * M_PI) + 1 + chisq / nrow) + 2 * log(nrow);
 
+	// Compute test data metrics
+	if (testRows > 0) {
+		response = testData->vector;
+		testMatrix = gsl_matrix_alloc(testRows, ncol);
+		status = arrange_data(testData, testMatrix, ncol);
+		testResid = gsl_vector_alloc(testRows);
+		testResponse = testData->vector; // First column is the response
+		status = gsl_multifit_linear_residuals(testMatrix,
+					 testResponse, coef, testResid);
+		st = gsl_vector_alloc(testRows);
+		status = gsl_vector_memcpy(st, testResid);
+		status = gsl_vector_mul(st, st);
+		rmse = sqrt(gsl_vector_sum(st) / testRows);
+		status = gsl_vector_div(st, testResid);
+		mae = gsl_vector_sum(st) / testRows;
+		gsl_vector_free(st);
+		gsl_vector_free(testResid);
+		gsl_matrix_free(testMatrix);
+	}
+
 	// Print model outputs to stdout
 	// strlen
 	if (strlen(name)) {
@@ -412,6 +473,14 @@ int main(int argc, char *argv[])
 
 			case F_STATISTIC:
 				printf("%g\n", f);
+				break;
+
+			case RMSE:
+				printf("%g\n", rmse);
+				break;
+
+			case MAE:
+				printf("%g\n", mae);
 				break;
 		}
 	} else {
