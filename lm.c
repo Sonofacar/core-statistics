@@ -144,7 +144,8 @@ int main(int argc, char *argv[])
 	   				"set\n");
 				printf("\twith the following command:\n");
 				printf("\n");
-				printf("\t-s, --test-ratio\n");
+				printf("\t-s, --test-ratio <number between 0 "
+					"and 1>\n");
 				printf("\n");
 				printf("\tThe diagnostics train-test "
 	   				"splitting enables are the "
