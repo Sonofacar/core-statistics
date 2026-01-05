@@ -28,7 +28,7 @@ To-do list:
 				- coefficients w/ names
 				- options print model diagnostics to stdout
 			- no name prints summary to stdout
-		- [ ] train/test sets?
+		- [X] train/test sets?
 		- [X] transformation of response variable
 		- [X] category encoding type
 	- [ ] Dynamically handle long matrices
