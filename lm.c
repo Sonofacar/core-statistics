@@ -27,6 +27,180 @@ static struct option longOptions[] = {
 	{"mae", 0, NULL, 'M'}
 };
 
+int parse_args(int opt, diagnoseType * output, FILE ** input,
+		encodeType * encoding, char ** name,
+		transformType * responseTransform, double * testRatio)
+{
+	switch(opt) {
+		case 'h':
+			printf("%s", LM_HELP_MESSAGE);
+			return 1;
+			break;
+
+		case 'i':
+			*input = fopen(optarg, "r");
+			return 0;
+			break;
+
+		case 'd':
+			if (*encoding == ENCODE_NONE) {
+				*encoding = ENCODE_DUMMY;
+			} else {
+				fprintf(stderr, "Multiple types of "
+					"encoding specified\n");
+				return 1;
+			}
+			return 0;
+			break;
+
+		case 't':
+			if (*encoding == ENCODE_NONE) {
+				*encoding = ENCODE_MEAN_TARGET;
+			} else {
+				fprintf(stderr, "Multiple types of "
+					"encoding specified\n");
+				return 1;
+			}
+			return 0;
+			break;
+
+		case 'T':
+			if (*encoding == ENCODE_NONE) {
+				*encoding = ENCODE_MEDIAN_TARGET;
+			} else {
+				fprintf(stderr, "Multiple types of "
+					"encoding specified\n");
+				return 1;
+			}
+			return 0;
+			break;
+
+		case 'l':
+			if (*responseTransform  == TRANSFORM_NONE) {
+				*responseTransform = TRANSFORM_LOG;
+			} else {
+				fprintf(stderr, "Multiple "
+					"transformations specified\n");
+				return 1;
+			}
+			return 0;
+			break;
+
+		case 'L':
+			if (*responseTransform  == TRANSFORM_NONE) {
+				*responseTransform = TRANSFORM_LOG_OFFSET;
+			} else {
+				fprintf(stderr, "Multiple "
+					"transformations specified\n");
+				return 1;
+			}
+			return 0;
+			break;
+
+		case 'n':
+			*name = strdup(optarg);
+			return 0;
+			break;
+
+		case 's':
+			sscanf(optarg, "%lf", testRatio);
+			if ((0 > *testRatio) || (1 < *testRatio)) {
+				*testRatio = 0;
+			}
+			return 0;
+			break;
+
+		case 'a':
+			if (output == ALL) {
+				*output = AIC;
+			} else {
+				fprintf(stderr, "Multiple diagnostics "
+					"specified. Using the "
+					"first.\n");
+			}
+			return 0;
+			break;
+
+		case 'b':
+			if (*output == ALL) {
+				*output = BIC;
+			} else {
+				fprintf(stderr, "Multiple diagnostics "
+					"specified. Using the "
+					"first.\n");
+			}
+			return 0;
+			break;
+
+		case 'r':
+			if (*output == ALL) {
+				*output = R_SQUARED;
+			} else {
+				fprintf(stderr, "Multiple diagnostics "
+					"specified. Using the "
+					"first.\n");
+			}
+			return 0;
+			break;
+
+		case 'R':
+			if (*output == ALL) {
+				*output = ADJ_R_SQUARED;
+			} else {
+				fprintf(stderr, "Multiple diagnostics "
+					"specified. Using the "
+					"first.\n");
+			}
+			return 0;
+			break;
+
+		case 'f':
+			if (*output == ALL) {
+				*output = F_STATISTIC;
+			} else {
+				fprintf(stderr, "Multiple diagnostics "
+					"specified. Using the "
+					"first.\n");
+			}
+			return 0;
+			break;
+
+		case 'm':
+			if (*output == ALL) {
+				*output = RMSE;
+			} else {
+				fprintf(stderr, "Multiple diagnostics "
+					"specified. Using the "
+					"first.\n");
+			}
+			return 0;
+			break;
+
+		case 'M':
+			if (*output == ALL) {
+				*output = MAE;
+			} else {
+				fprintf(stderr, "Multiple diagnostics "
+					"specified. Using the "
+					"first.\n");
+			}
+			return 0;
+			break;
+
+		case '?':
+			fprintf(stderr, "Unknown option: %c\n",
+					optopt);
+			return 1;
+			break;
+
+		default:
+			fprintf(stderr, "Unknown option: %c\n",
+					optopt);
+			return 1;
+			break;
+	};
+}
+
 int main(int argc, char *argv[])
 {
 	// Command line options
@@ -73,153 +247,10 @@ int main(int argc, char *argv[])
 
 	while ((opt = getopt_long_only(argc, argv, ":hi:dtTlLn:s:abrRfmM",
 		longOptions, NULL)) != -1) {
-		switch(opt) {
-			case 'h':
-				printf("%s", LM_HELP_MESSAGE);
-				return 1;
-				break;
-
-			case 'i':
-				input = fopen(optarg, "r");
-				break;
-
-			case 'd':
-				if (encoding == ENCODE_NONE) {
-					encoding = ENCODE_DUMMY;
-				} else {
-					fprintf(stderr, "Multiple types of "
-						"encoding specified\n");
-					return 1;
-				}
-				break;
-
-			case 't':
-				if (encoding == ENCODE_NONE) {
-					encoding = ENCODE_MEAN_TARGET;
-				} else {
-					fprintf(stderr, "Multiple types of "
-						"encoding specified\n");
-					return 1;
-				}
-				break;
-
-			case 'T':
-				if (encoding == ENCODE_NONE) {
-					encoding = ENCODE_MEDIAN_TARGET;
-				} else {
-					fprintf(stderr, "Multiple types of "
-						"encoding specified\n");
-					return 1;
-				}
-				break;
-
-			case 'l':
-				if (responseTransform  == TRANSFORM_NONE) {
-					responseTransform = TRANSFORM_LOG;
-				} else {
-					fprintf(stderr, "Multiple "
-						"transformations specified\n");
-					return 1;
-				}
-				break;
-
-			case 'L':
-				if (responseTransform  == TRANSFORM_NONE) {
-					responseTransform =
-						TRANSFORM_LOG_OFFSET;
-				} else {
-					fprintf(stderr, "Multiple "
-						"transformations specified\n");
-					return 1;
-				}
-				break;
-
-			case 'n':
-				name = strdup(optarg);
-				break;
-
-			case 's':
-				sscanf(optarg, "%lf", &testRatio);
-				if ((0 > testRatio) || (1 < testRatio)) {
-					testRatio = 0;
-				}
-				break;
-
-			case 'a':
-				if (output == ALL) {
-					output = AIC;
-				} else {
-					fprintf(stderr, "Multiple diagnostics "
-	     					"specified. Using the "
-	     					"first.\n");
-				}
-				break;
-
-			case 'b':
-				if (output == ALL) {
-					output = BIC;
-				} else {
-					fprintf(stderr, "Multiple diagnostics "
-	     					"specified. Using the "
-	     					"first.\n");
-				}
-				break;
-
-			case 'r':
-				if (output == ALL) {
-					output = R_SQUARED;
-				} else {
-					fprintf(stderr, "Multiple diagnostics "
-	     					"specified. Using the "
-	     					"first.\n");
-				}
-				break;
-
-			case 'R':
-				if (output == ALL) {
-					output = ADJ_R_SQUARED;
-				} else {
-					fprintf(stderr, "Multiple diagnostics "
-	     					"specified. Using the "
-	     					"first.\n");
-				}
-				break;
-
-			case 'f':
-				if (output == ALL) {
-					output = F_STATISTIC;
-				} else {
-					fprintf(stderr, "Multiple diagnostics "
-	     					"specified. Using the "
-	     					"first.\n");
-				}
-				break;
-
-			case 'm':
-				if (output == ALL) {
-					output = RMSE;
-				} else {
-					fprintf(stderr, "Multiple diagnostics "
-	     					"specified. Using the "
-	     					"first.\n");
-				}
-				break;
-
-			case 'M':
-				if (output == ALL) {
-					output = MAE;
-				} else {
-					fprintf(stderr, "Multiple diagnostics "
-	     					"specified. Using the "
-	     					"first.\n");
-				}
-				break;
-
-			case '?':
-				fprintf(stderr, "Unknown option: %c\n",
-						optopt);
-				return 1;
-				break;
+		status = parse_args(opt, &output, &input, &encoding, &name,
+				&responseTransform, &testRatio);
+		if (status == 1) {
+			return 1;
 		}
 	}
 
@@ -247,23 +278,24 @@ int main(int argc, char *argv[])
 		case ENCODE_MEAN_TARGET:
 			encodingInfo = NULL;
 			ncol = read_columns(columnHead, lines,
-		       			mean_target_encode, nrow,
-		       			&encodingInfo);
+					mean_target_encode, nrow,
+					&encodingInfo);
 			if (testRows > 0) {
 				read_columns(testData, testLines,
-		 			mean_target_encode, testRows,
-		 			&encodingInfo);
+					mean_target_encode, testRows,
+					&encodingInfo);
 			}
 			break;
 
 		case ENCODE_MEDIAN_TARGET:
 			encodingInfo = NULL;
 			ncol = read_columns(columnHead, lines,
-		       			median_target_encode, nrow, &encodingInfo);
+					median_target_encode, nrow,
+					&encodingInfo);
 			if (testRows > 0) {
 				read_columns(testData, testLines,
-		 			median_target_encode, testRows,
-		 			&encodingInfo);
+					median_target_encode, testRows,
+					&encodingInfo);
 			}
 			break;
 
@@ -273,7 +305,7 @@ int main(int argc, char *argv[])
 					nrow, &encodingInfo);
 			if (testRows > 0) {
 				read_columns(testData, testLines, no_encode,
-		 			testRows, &encodingInfo);
+					testRows, &encodingInfo);
 			}
 			break;
 	}
@@ -358,7 +390,7 @@ int main(int argc, char *argv[])
 		testResid = gsl_vector_alloc(testRows);
 		testResponse = testData->vector; // First column is the response
 		status = gsl_multifit_linear_residuals(testMatrix,
-					 testResponse, coef, testResid);
+				testResponse, coef, testResid);
 		st = gsl_vector_alloc(testRows);
 		status = gsl_vector_memcpy(st, testResid);
 		status = gsl_vector_mul(st, st);
