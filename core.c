@@ -395,16 +395,14 @@ void coefficient_p_values(gsl_vector * pVals, gsl_matrix * varCovar,
 	double se;
 	double c;
 	double t;
-	double upper;
-	double lower;
+	double tail;
 
 	for (int i = 0; i < n; i++) {
-		se = gsl_matrix_get(varCovar, i, i);
+		se = sqrt(gsl_matrix_get(varCovar, i, i));
 		c = gsl_vector_get(coef, i);
 		t = fabs(c / se);
-		lower = gsl_cdf_tdist_P(-t, df);
-		upper = gsl_cdf_tdist_Q(t, df);
-		gsl_vector_set(pVals, i, lower + upper);
+		tail = gsl_cdf_tdist_Q(t, df);
+		gsl_vector_set(pVals, i, 2 * tail);
 	}
 }
 

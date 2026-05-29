@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
 
 	// Calculate coefficient p-values
 	pVals = gsl_vector_alloc(ncol);
-	coefficient_p_values(pVals, covMatrix, coef, ncol, nrow - ncol);
+	coefficient_p_values(pVals, covMatrix, coef, ncol, nrow - ncol - 1);
 	gsl_matrix_free(covMatrix);
 
 	// Calculate sum of squares values
