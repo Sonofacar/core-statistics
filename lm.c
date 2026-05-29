@@ -3,6 +3,7 @@
 #include <getopt.h>
 #include <time.h>
 #include "core.h"
+#include "model_utils.h"
 
 // Field 2:
 // no_argument: 0
@@ -111,7 +112,7 @@ int parse_args(int opt, diagnoseType * output, FILE ** input,
 			break;
 
 		case 'a':
-			if (output == ALL) {
+			if (*output == ALL) {
 				*output = AIC;
 			} else {
 				fprintf(stderr, "Multiple diagnostics "

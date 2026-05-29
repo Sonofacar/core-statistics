@@ -2,11 +2,11 @@ CC := gcc
 CFLAGS := -Wall -Wextra -std=gnu11 -g $(shell gsl-config --cflags)
 LDFLAGS := $(shell gsl-config --libs)
 TEST_LIBS := $(shell pkg-config --libs cmocka)
-SRC := core.c encode.c lm.c
+SRC := core.c encode.c model_utils.c lm.c
 OBJS := $(SRC:.c=.o)
 TARGET := lm
 
-TEST_SRC := runtests.c core.c encode.c
+TEST_SRC := runtests.c core.c encode.c model_utils.c
 TEST_OBJS := $(TEST_SRC:.c=.o)
 TEST_BIN := runtests
 
