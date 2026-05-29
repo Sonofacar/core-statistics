@@ -20,7 +20,7 @@ To-do list:
 			- [X] target encoding
 - [X] Write tests
 - [X] Verify memory usage is correct
-- [ ] lm (linear model)
+- [X] lm (linear model)
 	- [X] Create a useful linear model
 	- [X] Create command line options
 		- [X] Dynamic output
@@ -31,5 +31,8 @@ To-do list:
 		- [X] train/test sets?
 		- [X] transformation of response variable
 		- [X] category encoding type
-- [ ] tlm (truncated SVD linear model)
+- [ ] tsvdlm (truncated SVD linear model)
 - [ ] plm (penalized linear model)
+- [ ] step (Model stepping algorithm)
+- [ ] norm (normalize column/set of columns)
+- [ ] filter (tool to filter rows)
