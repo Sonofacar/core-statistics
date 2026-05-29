@@ -31,5 +31,5 @@ To-do list:
 		- [X] train/test sets?
 		- [X] transformation of response variable
 		- [X] category encoding type
-	- [ ] Dynamically handle long matrices
+- [ ] tlm (truncated SVD linear model)
 - [ ] plm (penalized linear model)
