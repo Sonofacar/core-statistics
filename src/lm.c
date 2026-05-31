@@ -29,16 +29,9 @@ static struct option longOptions[] = {
 
 int main(int argc, char *argv[])
 {
-	// Command line options
-	int opt;
-	encodeType encoding = ENCODE_NONE;
-	transformType responseTransform = TRANSFORM_NONE;
-	char * name = "";
-	FILE * input = stdin;
-	diagnoseType output = ALL;
-	double testRatio = 0;
-
 	// Model variables
+	int opt;
+	modelConfigType * config;
 	int status;
 	int nrow;
 	int ncol;
@@ -57,10 +50,11 @@ int main(int argc, char *argv[])
 	gsl_matrix * covMatrix;
 	gsl_multifit_linear_workspace * work;
 
+	config = malloc(sizeof(modelConfigType));
+	config->input = stdin;
 	while ((opt = getopt_long_only(argc, argv, ":hi:dtTlLn:s:abrRfmM",
 		longOptions, NULL)) != -1) {
-		status = parse_args(opt, &output, &input, &encoding, &name,
-				&responseTransform, &testRatio);
+		status = parse_args(opt, config, LM_HELP_MESSAGE);
 		if (status == 1) {
 			return 1;
 		}
@@ -70,13 +64,13 @@ int main(int argc, char *argv[])
 	srand(time(NULL));
 
 	// Parse incoming csv file
-	nrow = read_rows(&lines, input);
-	testRows = test_split(&lines, &testLines, testRatio, nrow);
+	nrow = read_rows(&lines, config->input);
+	testRows = test_split(&lines, &testLines, config->testRatio, nrow);
 	nrow -= testRows;
-	fclose(input);
+	fclose(config->input);
 	columnHead = column_alloc(nrow, "");
 	testData = column_alloc(testRows, "");
-	switch(encoding) {
+	switch(config->encoding) {
 		case ENCODE_DUMMY:
 			encodingInfo = NULL;
 			ncol = read_columns(columnHead, lines, dummy_encode,
@@ -147,7 +141,7 @@ int main(int argc, char *argv[])
 	covMatrix = gsl_matrix_calloc(ncol, ncol);
 
 	// Perform transformation if necessary
-	switch(responseTransform) {
+	switch(config->transformation) {
 		case TRANSFORM_LOG:
 			transform(response, log, nrow);
 			break;
@@ -167,13 +161,14 @@ int main(int argc, char *argv[])
 	gsl_multifit_linear_free(work);
 
 	// Print diagnostics
-	diagnostics(output, chisq, response, coef, covMatrix, colNames,
-			testRows, testData, name);
+	diagnostics(config->diagnostic, chisq, response, coef, covMatrix,
+			colNames, testRows, testData, config->name);
 
 	// Free memory
 	gsl_matrix_free(covMatrix);
 	column_free(testData);
 	free(colNames);
+	free(config);
 	gsl_vector_free(coef);
 
 	return status;

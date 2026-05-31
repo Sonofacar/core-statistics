@@ -2,24 +2,22 @@
 #include "core.h"
 #include "model_utils.h"
 
-int parse_args(int opt, diagnoseType * output, FILE ** input,
-		encodeType * encoding, char ** name,
-		transformType * responseTransform, double * testRatio)
+int parse_args(int opt, modelConfigType * config, char * helpMessage)
 {
 	switch(opt) {
 		case 'h':
-			printf("%s", LM_HELP_MESSAGE);
+			printf("%s", helpMessage);
 			return 1;
 			break;
 
 		case 'i':
-			*input = fopen(optarg, "r");
+			config->input = fopen(optarg, "r");
 			return 0;
 			break;
 
 		case 'd':
-			if (*encoding == ENCODE_NONE) {
-				*encoding = ENCODE_DUMMY;
+			if (config->encoding == ENCODE_NONE) {
+				config->encoding = ENCODE_DUMMY;
 			} else {
 				fprintf(stderr, "Multiple types of "
 					"encoding specified\n");
@@ -29,8 +27,8 @@ int parse_args(int opt, diagnoseType * output, FILE ** input,
 			break;
 
 		case 't':
-			if (*encoding == ENCODE_NONE) {
-				*encoding = ENCODE_MEAN_TARGET;
+			if (config->encoding == ENCODE_NONE) {
+				config->encoding = ENCODE_MEAN_TARGET;
 			} else {
 				fprintf(stderr, "Multiple types of "
 					"encoding specified\n");
@@ -40,8 +38,8 @@ int parse_args(int opt, diagnoseType * output, FILE ** input,
 			break;
 
 		case 'T':
-			if (*encoding == ENCODE_NONE) {
-				*encoding = ENCODE_MEDIAN_TARGET;
+			if (config->encoding == ENCODE_NONE) {
+				config->encoding = ENCODE_MEDIAN_TARGET;
 			} else {
 				fprintf(stderr, "Multiple types of "
 					"encoding specified\n");
@@ -51,8 +49,8 @@ int parse_args(int opt, diagnoseType * output, FILE ** input,
 			break;
 
 		case 'l':
-			if (*responseTransform  == TRANSFORM_NONE) {
-				*responseTransform = TRANSFORM_LOG;
+			if (config->transformation  == TRANSFORM_NONE) {
+				config->transformation = TRANSFORM_LOG;
 			} else {
 				fprintf(stderr, "Multiple "
 					"transformations specified\n");
@@ -62,8 +60,8 @@ int parse_args(int opt, diagnoseType * output, FILE ** input,
 			break;
 
 		case 'L':
-			if (*responseTransform  == TRANSFORM_NONE) {
-				*responseTransform = TRANSFORM_LOG_OFFSET;
+			if (config->transformation  == TRANSFORM_NONE) {
+				config->transformation = TRANSFORM_LOG_OFFSET;
 			} else {
 				fprintf(stderr, "Multiple "
 					"transformations specified\n");
@@ -73,21 +71,22 @@ int parse_args(int opt, diagnoseType * output, FILE ** input,
 			break;
 
 		case 'n':
-			*name = strdup(optarg);
+			config->name = strdup(optarg);
 			return 0;
 			break;
 
 		case 's':
-			sscanf(optarg, "%lf", testRatio);
-			if ((0 > *testRatio) || (1 < *testRatio)) {
-				*testRatio = 0;
+			sscanf(optarg, "%lf", &config->testRatio);
+			if ((0 > config->testRatio) ||
+					(1 < config->testRatio)) {
+				config->testRatio = 0;
 			}
 			return 0;
 			break;
 
 		case 'a':
-			if (*output == ALL) {
-				*output = AIC;
+			if (config->diagnostic == ALL) {
+				config->diagnostic = AIC;
 			} else {
 				fprintf(stderr, "Multiple diagnostics "
 					"specified. Using the "
@@ -97,8 +96,8 @@ int parse_args(int opt, diagnoseType * output, FILE ** input,
 			break;
 
 		case 'b':
-			if (*output == ALL) {
-				*output = BIC;
+			if (config->diagnostic == ALL) {
+				config->diagnostic = BIC;
 			} else {
 				fprintf(stderr, "Multiple diagnostics "
 					"specified. Using the "
@@ -108,8 +107,8 @@ int parse_args(int opt, diagnoseType * output, FILE ** input,
 			break;
 
 		case 'r':
-			if (*output == ALL) {
-				*output = R_SQUARED;
+			if (config->diagnostic == ALL) {
+				config->diagnostic = R_SQUARED;
 			} else {
 				fprintf(stderr, "Multiple diagnostics "
 					"specified. Using the "
@@ -119,8 +118,8 @@ int parse_args(int opt, diagnoseType * output, FILE ** input,
 			break;
 
 		case 'R':
-			if (*output == ALL) {
-				*output = ADJ_R_SQUARED;
+			if (config->diagnostic == ALL) {
+				config->diagnostic = ADJ_R_SQUARED;
 			} else {
 				fprintf(stderr, "Multiple diagnostics "
 					"specified. Using the "
@@ -130,8 +129,8 @@ int parse_args(int opt, diagnoseType * output, FILE ** input,
 			break;
 
 		case 'f':
-			if (*output == ALL) {
-				*output = F_STATISTIC;
+			if (config->diagnostic == ALL) {
+				config->diagnostic = F_STATISTIC;
 			} else {
 				fprintf(stderr, "Multiple diagnostics "
 					"specified. Using the "
@@ -141,8 +140,8 @@ int parse_args(int opt, diagnoseType * output, FILE ** input,
 			break;
 
 		case 'm':
-			if (*output == ALL) {
-				*output = RMSE;
+			if (config->diagnostic == ALL) {
+				config->diagnostic = RMSE;
 			} else {
 				fprintf(stderr, "Multiple diagnostics "
 					"specified. Using the "
@@ -152,8 +151,8 @@ int parse_args(int opt, diagnoseType * output, FILE ** input,
 			break;
 
 		case 'M':
-			if (*output == ALL) {
-				*output = MAE;
+			if (config->diagnostic == ALL) {
+				config->diagnostic = MAE;
 			} else {
 				fprintf(stderr, "Multiple diagnostics "
 					"specified. Using the "

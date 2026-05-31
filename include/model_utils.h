@@ -1,3 +1,12 @@
+typedef struct {
+	char * name;
+	FILE * input;
+	encodeType encoding;
+	diagnoseType diagnostic;
+	transformType transformation;
+	double testRatio;
+} modelConfigType;
+
 void coefficient_p_values(gsl_vector * pVals, gsl_matrix * varCovar,
 		gsl_vector * coef, int n, int df);
 
@@ -9,9 +18,7 @@ void print_diagnostics(double rSquared, double adjRSquared, double fStat,
 
 void save_model(char * baseName, gsl_vector * coef, char ** colNames, int p);
 
-int parse_args(int opt, diagnoseType * output, FILE ** input,
-		encodeType * encoding, char ** name,
-		transformType * responseTransform, double * testRatio);
+int parse_args(int opt, modelConfigType * config, char * helpMessage);
 
 double diagnostics(diagnoseType type, double chisq, gsl_vector * response,
 		gsl_vector * coef, gsl_matrix * covMatrix, char ** colNames,
