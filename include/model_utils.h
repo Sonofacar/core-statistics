@@ -9,6 +9,14 @@ void print_diagnostics(double rSquared, double adjRSquared, double fStat,
 
 void save_model(char * baseName, gsl_vector * coef, char ** colNames, int p);
 
+int parse_args(int opt, diagnoseType * output, FILE ** input,
+		encodeType * encoding, char ** name,
+		transformType * responseTransform, double * testRatio);
+
+double diagnostics(diagnoseType type, double chisq, gsl_vector * response,
+		gsl_vector * coef, gsl_matrix * covMatrix, char ** colNames,
+		int testRows, dataColumn * testData, char * modelName);
+
 #define LM_HELP_MESSAGE \
 	"Usage: lm [-h] [-i file] [-n name] [TRANSFORM] [ENCODING] " \
 		"[DIAGNOSTIC]\n" \

@@ -1,6 +1,5 @@
 #include <gsl/gsl_multifit.h>
 #include <unistd.h>
-#include <getopt.h>
 #include <time.h>
 #include "core.h"
 #include "model_utils.h"
@@ -28,180 +27,6 @@ static struct option longOptions[] = {
 	{"mae", 0, NULL, 'M'}
 };
 
-int parse_args(int opt, diagnoseType * output, FILE ** input,
-		encodeType * encoding, char ** name,
-		transformType * responseTransform, double * testRatio)
-{
-	switch(opt) {
-		case 'h':
-			printf("%s", LM_HELP_MESSAGE);
-			return 1;
-			break;
-
-		case 'i':
-			*input = fopen(optarg, "r");
-			return 0;
-			break;
-
-		case 'd':
-			if (*encoding == ENCODE_NONE) {
-				*encoding = ENCODE_DUMMY;
-			} else {
-				fprintf(stderr, "Multiple types of "
-					"encoding specified\n");
-				return 1;
-			}
-			return 0;
-			break;
-
-		case 't':
-			if (*encoding == ENCODE_NONE) {
-				*encoding = ENCODE_MEAN_TARGET;
-			} else {
-				fprintf(stderr, "Multiple types of "
-					"encoding specified\n");
-				return 1;
-			}
-			return 0;
-			break;
-
-		case 'T':
-			if (*encoding == ENCODE_NONE) {
-				*encoding = ENCODE_MEDIAN_TARGET;
-			} else {
-				fprintf(stderr, "Multiple types of "
-					"encoding specified\n");
-				return 1;
-			}
-			return 0;
-			break;
-
-		case 'l':
-			if (*responseTransform  == TRANSFORM_NONE) {
-				*responseTransform = TRANSFORM_LOG;
-			} else {
-				fprintf(stderr, "Multiple "
-					"transformations specified\n");
-				return 1;
-			}
-			return 0;
-			break;
-
-		case 'L':
-			if (*responseTransform  == TRANSFORM_NONE) {
-				*responseTransform = TRANSFORM_LOG_OFFSET;
-			} else {
-				fprintf(stderr, "Multiple "
-					"transformations specified\n");
-				return 1;
-			}
-			return 0;
-			break;
-
-		case 'n':
-			*name = strdup(optarg);
-			return 0;
-			break;
-
-		case 's':
-			sscanf(optarg, "%lf", testRatio);
-			if ((0 > *testRatio) || (1 < *testRatio)) {
-				*testRatio = 0;
-			}
-			return 0;
-			break;
-
-		case 'a':
-			if (*output == ALL) {
-				*output = AIC;
-			} else {
-				fprintf(stderr, "Multiple diagnostics "
-					"specified. Using the "
-					"first.\n");
-			}
-			return 0;
-			break;
-
-		case 'b':
-			if (*output == ALL) {
-				*output = BIC;
-			} else {
-				fprintf(stderr, "Multiple diagnostics "
-					"specified. Using the "
-					"first.\n");
-			}
-			return 0;
-			break;
-
-		case 'r':
-			if (*output == ALL) {
-				*output = R_SQUARED;
-			} else {
-				fprintf(stderr, "Multiple diagnostics "
-					"specified. Using the "
-					"first.\n");
-			}
-			return 0;
-			break;
-
-		case 'R':
-			if (*output == ALL) {
-				*output = ADJ_R_SQUARED;
-			} else {
-				fprintf(stderr, "Multiple diagnostics "
-					"specified. Using the "
-					"first.\n");
-			}
-			return 0;
-			break;
-
-		case 'f':
-			if (*output == ALL) {
-				*output = F_STATISTIC;
-			} else {
-				fprintf(stderr, "Multiple diagnostics "
-					"specified. Using the "
-					"first.\n");
-			}
-			return 0;
-			break;
-
-		case 'm':
-			if (*output == ALL) {
-				*output = RMSE;
-			} else {
-				fprintf(stderr, "Multiple diagnostics "
-					"specified. Using the "
-					"first.\n");
-			}
-			return 0;
-			break;
-
-		case 'M':
-			if (*output == ALL) {
-				*output = MAE;
-			} else {
-				fprintf(stderr, "Multiple diagnostics "
-					"specified. Using the "
-					"first.\n");
-			}
-			return 0;
-			break;
-
-		case '?':
-			fprintf(stderr, "Unknown option: %c\n",
-					optopt);
-			return 1;
-			break;
-
-		default:
-			fprintf(stderr, "Unknown option: %c\n",
-					optopt);
-			return 1;
-			break;
-	};
-}
-
 int main(int argc, char *argv[])
 {
 	// Command line options
@@ -219,14 +44,6 @@ int main(int argc, char *argv[])
 	int ncol;
 	int testRows;
 	double chisq;
-	double rsq;
-	double adjRSQ;
-	double tss;
-	double f;
-	double aic;
-	double bic;
-	double rmse;
-	double mae;
 	char ** lines = NULL;
 	char ** testLines = NULL;
 	char ** colNames = NULL;
@@ -235,15 +52,9 @@ int main(int argc, char *argv[])
 	dataColumn * testData;
 	dataColumn * colPtr;
 	gsl_vector * response;
-	gsl_vector * meanResponse;
 	gsl_vector * coef;
-	gsl_vector * st;
-	gsl_vector * pVals;
-	gsl_vector * testResponse;
-	gsl_vector * testResid;
 	gsl_matrix * dataMatrix;
 	gsl_matrix * covMatrix;
-	gsl_matrix * testMatrix;
 	gsl_multifit_linear_workspace * work;
 
 	while ((opt = getopt_long_only(argc, argv, ":hi:dtTlLn:s:abrRfmM",
@@ -355,106 +166,15 @@ int main(int argc, char *argv[])
 	gsl_matrix_free(dataMatrix);
 	gsl_multifit_linear_free(work);
 
-	// Calculate coefficient p-values
-	pVals = gsl_vector_alloc(ncol);
-	coefficient_p_values(pVals, covMatrix, coef, ncol, nrow - ncol - 1);
-	gsl_matrix_free(covMatrix);
-
-	// Calculate sum of squares values
-	meanResponse = gsl_vector_alloc(nrow);
-	gsl_vector_set_all(meanResponse, gsl_vector_sum(response) / nrow);
-	st = gsl_vector_alloc(nrow);
-	status = gsl_vector_memcpy(st, response);
-	status = gsl_vector_sub(st, meanResponse);
-	status = gsl_vector_mul(st, st);
-	tss = gsl_vector_sum(st);
-	column_free(columnHead);
-	gsl_vector_free(st);
-	gsl_vector_free(meanResponse);
-
-	// Calculate R-squared values
-	rsq = 1 - (chisq/tss);
-	adjRSQ = 1 - ((1 - rsq) * (nrow - 1) / (nrow - ncol - 1));
-
-	// Calculate the F-statistic
-	f = ((tss - chisq) * (nrow - ncol) / ((ncol - 1) * chisq));
-
-	// Calculate AIC and BIC
-	aic = nrow * log(log(2 * M_PI) + 1 + chisq / nrow) + 2 * ncol;
-	bic = nrow * log(log(2 * M_PI) + 1 + chisq / nrow) + 2 * log(nrow);
-
-	// Compute test data metrics
-	if (testRows > 0) {
-		response = testData->vector;
-		testMatrix = gsl_matrix_alloc(testRows, ncol);
-		status = arrange_data(testData, testMatrix, ncol);
-		testResid = gsl_vector_alloc(testRows);
-		testResponse = testData->vector; // First column is the response
-		status = gsl_multifit_linear_residuals(testMatrix,
-				testResponse, coef, testResid);
-		st = gsl_vector_alloc(testRows);
-		status = gsl_vector_memcpy(st, testResid);
-		status = gsl_vector_mul(st, st);
-		rmse = sqrt(gsl_vector_sum(st) / testRows);
-		status = gsl_vector_div(st, testResid);
-		mae = gsl_vector_sum(st) / testRows;
-		gsl_vector_free(st);
-		gsl_vector_free(testResid);
-		gsl_matrix_free(testMatrix);
-	}
-
-	// Print model outputs to stdout
-	// strlen
-	if (strlen(name)) {
-		save_model(name, coef, colNames, ncol);
-		switch(output) {
-			case ALL:
-				print_diagnostics(rsq, adjRSQ, f, aic, bic);
-				break;
-
-			case AIC:
-				printf("%g\n", aic);
-				break;
-
-			case BIC:
-				printf("%g\n", bic);
-				break;
-
-			case R_SQUARED:
-				printf("%g\n", rsq);
-				break;
-
-			case ADJ_R_SQUARED:
-				printf("%g\n", adjRSQ);
-				break;
-
-			case F_STATISTIC:
-				printf("%g\n", f);
-				break;
-
-			case RMSE:
-				printf("%g\n", rmse);
-				break;
-
-			case MAE:
-				printf("%g\n", mae);
-				break;
-		}
-	} else {
-		if (output != ALL) {
-			fprintf(stderr, "Error: Diagnostic option given with "
-				"no name. It will be ignored.\n");
-		}
-		print_coefficients(coef, pVals, colNames, ncol);
-		printf("\n");
-		print_diagnostics(rsq, adjRSQ, f, aic, bic);
-	}
+	// Print diagnostics
+	diagnostics(output, chisq, response, coef, covMatrix, colNames,
+			testRows, testData, name);
 
 	// Free memory
+	gsl_matrix_free(covMatrix);
 	column_free(testData);
 	free(colNames);
 	gsl_vector_free(coef);
-	gsl_vector_free(pVals);
 
 	return status;
 }
