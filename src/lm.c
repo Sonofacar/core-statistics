@@ -14,7 +14,6 @@ int main(int argc, char *argv[])
 	modelConfigType * config;
 
 	// Model variables
-	int status;
 	int nrow;
 	int ncol;
 	int testRows;
@@ -98,7 +97,7 @@ int main(int argc, char *argv[])
 	}
 	dataMatrix = gsl_matrix_alloc(nrow, ncol);
 	response = columnHead->vector; // First column is the response
-	status = arrange_data(columnHead, dataMatrix, ncol);
+	if (arrange_data(columnHead, dataMatrix, ncol)) return 1;
 
 	// Pull out column names, skipping the response
 	colPtr = columnHead;
@@ -136,8 +135,10 @@ int main(int argc, char *argv[])
 	}
 
 	// Fit the model
-	gsl_multifit_linear(dataMatrix, response, coef, covMatrix, &chisq,
-			work);
+	if (gsl_multifit_linear(dataMatrix, response, coef, covMatrix, &chisq,
+				work)) {
+		return 1;
+	}
 	gsl_matrix_free(dataMatrix);
 	gsl_multifit_linear_free(work);
 
@@ -152,5 +153,5 @@ int main(int argc, char *argv[])
 	free(config);
 	gsl_vector_free(coef);
 
-	return status;
+	return 0;
 }
