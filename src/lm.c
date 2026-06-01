@@ -4,15 +4,16 @@
 #include "core.h"
 #include "model_utils.h"
 
-const struct option commandOptions[] = {
-	COMMON_OPTIONS,
-};
-
 int main(int argc, char *argv[])
 {
-	// Model variables
+	// Command-line options
+	const struct option commandOptions[] = {
+		COMMON_OPTIONS,
+	};
 	int opt;
 	modelConfigType * config;
+
+	// Model variables
 	int status;
 	int nrow;
 	int ncol;
