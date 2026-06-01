@@ -4,27 +4,8 @@
 #include "core.h"
 #include "model_utils.h"
 
-// Field 2:
-// no_argument: 0
-// required_argument: 1
-// optional_argument: 2
-static struct option longOptions[] = {
-	{"help", 0, NULL, 'h'},
-	{"input", 1, NULL, 'i'},
-	{"dummy", 0, NULL, 'd'},
-	{"target-mean", 0, NULL, 't'},
-	{"target-median", 0, NULL, 'T'},
-	{"log", 0, NULL, 'l'},
-	{"log-offset", 0, NULL, 'L'},
-	{"name", 1, NULL, 'n'},
-	{"test-ratio", 1, NULL, 's'},
-	{"aic", 0, NULL, 'a'},
-	{"bic", 0, NULL, 'b'},
-	{"r-squared", 0, NULL, 'r'},
-	{"adjusted-r-squared", 0, NULL, 'R'},
-	{"f-statistic", 0, NULL, 'f'},
-	{"rmse", 0, NULL, 'm'},
-	{"mae", 0, NULL, 'M'}
+const struct option commandOptions[] = {
+	COMMON_OPTIONS,
 };
 
 int main(int argc, char *argv[])
@@ -52,10 +33,9 @@ int main(int argc, char *argv[])
 
 	config = malloc(sizeof(modelConfigType));
 	config->input = stdin;
-	while ((opt = getopt_long_only(argc, argv, ":hi:dtTlLn:s:abrRfmM",
-		longOptions, NULL)) != -1) {
-		status = parse_args(opt, config, LM_HELP_MESSAGE);
-		if (status == 1) {
+	while ((opt = getopt_long_only(argc, argv, COMMON_OPTION_STRING,
+					commandOptions, NULL)) != -1) {
+		if (parse_args(opt, config, LM_HELP_MESSAGE)) {
 			return 1;
 		}
 	}
