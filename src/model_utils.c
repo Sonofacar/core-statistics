@@ -284,7 +284,7 @@ double diagnostics(diagnoseType type, double chisq, gsl_vector * response,
 			print_coefficients(coef, pVals, colNames, ncol);
 			printf("\n");
 			print_diagnostics(rsq, adjRSQ, f, aic, bic);
-			save_model(modelName, coef, colNames, ncol);
+			if (modelName) save_model(modelName, coef, colNames, ncol);
 			return 0; // Early return to avoid printing
 			break;
 
