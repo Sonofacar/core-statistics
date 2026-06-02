@@ -162,15 +162,15 @@ int parse_args(int opt, modelConfigType * config, char * helpMessage)
 			break;
 
 		case '?':
-			fprintf(stderr, "Unknown option: %c\n",
-					optopt);
-			return 1;
+			// Unknown parameter, we just pass through for custom
+			// arguments
+			return 0;
 			break;
 
 		default:
-			fprintf(stderr, "Unknown option: %c\n",
-					optopt);
-			return 1;
+			// Unknown parameter, we just pass through for custom
+			// arguments
+			return 0;
 			break;
 	};
 }
@@ -197,7 +197,7 @@ void print_coefficients(gsl_vector * coef, gsl_vector * pVals, char ** names,
 {
 	printf("Coefficients:\n");
 	printf("%17.17s\tValue\t\tP-Value\n", "Name");
-	for (int i = 0; i < ncol; i++) {
+	for (int i = 0; i <= ncol; i++) {
 		printf("%17.17s\t", names[i]);
 		printf("%9.9g\t", gsl_vector_get(coef, i));
 		printf("%9.9g\n", gsl_vector_get(pVals, i));
@@ -268,8 +268,8 @@ double diagnostics(diagnoseType type, double chisq, gsl_vector * response,
 		case ALL:
 			double aic, bic, rsq, adjRSQ, f;
 			// We just print things out here
-			pVals = gsl_vector_alloc(ncol);
-			coefficient_p_values(pVals, covMatrix, coef, ncol,
+			pVals = gsl_vector_alloc(ncol + 1);
+			coefficient_p_values(pVals, covMatrix, coef, ncol + 1,
 					nrow - ncol - 1);
 			aic = nrow * log(log(2 * M_PI) + 1 + chisq / nrow) +
 				2 * ncol;
@@ -284,6 +284,7 @@ double diagnostics(diagnoseType type, double chisq, gsl_vector * response,
 			print_coefficients(coef, pVals, colNames, ncol);
 			printf("\n");
 			print_diagnostics(rsq, adjRSQ, f, aic, bic);
+			save_model(modelName, coef, colNames, ncol);
 			return 0; // Early return to avoid printing
 			break;
 
