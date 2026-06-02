@@ -19,6 +19,7 @@
 #include <gsl/gsl_statistics_double.h>
 
 #include "core.h"
+#include "debug.h"
 
 dataColumn * column_alloc(int n, char name[])
 {

@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <time.h>
 #include "core.h"
+#include "debug.h"
 #include "model_utils.h"
 
 #define ADDITIONAL_HELP \
