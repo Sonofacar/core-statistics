@@ -228,7 +228,7 @@ void save_model(char * baseName, gsl_vector * coef, char ** colNames, int p)
 	// Write coefficients and column names
 	name = strcat(baseName, ".coef");
 	file = fopen(name, "w");
-	for (int i = 0; i < p; i++) {
+	for (int i = 0; i <= p; i++) {
 		fprintf(file, "%s\t%g\n", colNames[i], gsl_vector_get(coef, i));
 	}
 	fclose(file);

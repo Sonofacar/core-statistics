@@ -6,7 +6,7 @@ COMMON_SRC := src/core.c \
 	      src/encode.c \
 	      src/model_utils.c
 COMMON_OBJS := $(COMMON_SRC:src/%.c=build/%.o)
-TARGETS := lm
+TARGETS := lm tsvdlm
 
 TEST_SRC := src/runtests.c
 TEST_OBJS := $(TEST_SRC:src/%.c=build/%.o)

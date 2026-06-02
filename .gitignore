@@ -6,3 +6,4 @@ runtests
 *.gcov
 *.gcno
 *.gcda
+tsvdlm

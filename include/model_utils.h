@@ -5,6 +5,7 @@ typedef struct {
 	diagnoseType diagnostic;
 	transformType transformation;
 	double testRatio;
+	double svdTolerance;
 } modelConfigType;
 
 // Field 2:
