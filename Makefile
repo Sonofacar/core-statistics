@@ -4,6 +4,7 @@ LDFLAGS := $(shell gsl-config --libs)
 TEST_LIBS := $(shell pkg-config --libs cmocka)
 COMMON_SRC := src/core.c \
 	      src/encode.c \
+	      src/debug.c \
 	      src/model_utils.c
 COMMON_OBJS := $(COMMON_SRC:src/%.c=build/%.o)
 TARGETS := lm tsvdlm
