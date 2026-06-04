@@ -1,4 +1,5 @@
 #include <gsl/gsl_multifit.h>
+#include <gsl/gsl_linalg.h>
 #include <unistd.h>
 #include <time.h>
 #include "core.h"
@@ -16,6 +17,83 @@
 	"linear\n" \
 	"\tregression.\n"
 
+int fit_svd_model(double tol, gsl_matrix * X, gsl_vector * y,
+		gsl_vector * beta, gsl_matrix * varBeta, double * chisq)
+{
+	size_t rank;
+	gsl_vector * UTy;
+	gsl_vector * yHat;
+	gsl_vector * residuals;
+	gsl_vector * tmpCol;
+	gsl_vector * tmpRow;
+	gsl_matrix * U;
+	gsl_matrix * V;
+	gsl_matrix * SigmaInv;
+	gsl_matrix * VSigmaInv;
+	gsl_matrix * SigmaInvVT;
+	gsl_multifit_linear_workspace * work;
+
+	// Perform BSVD
+	work = gsl_multifit_linear_alloc(X->size1, X->size2);
+	if (gsl_multifit_linear_svd(X, work)) {
+		return 1;
+	}
+	rank = gsl_multifit_linear_rank(tol, work);
+
+	// Set up matrices
+	U = gsl_matrix_alloc(X->size1, rank);		// A
+	SigmaInv = gsl_matrix_calloc(rank, rank);	// S^-1
+	V = gsl_matrix_alloc(X->size2, rank);		// Q
+	VSigmaInv = gsl_matrix_calloc(X->size2, rank);
+	SigmaInvVT = gsl_matrix_calloc(rank, X->size2);
+	UTy = gsl_vector_alloc(rank);
+	yHat = gsl_vector_alloc(y->size);
+	residuals = gsl_vector_alloc(y->size);
+	tmpCol = gsl_vector_alloc(X->size1);
+	tmpRow = gsl_vector_alloc(X->size2);
+	for (size_t i = 0; i < rank; i++) {
+		gsl_matrix_get_col(tmpCol, work->A, i);
+		gsl_matrix_set_col(U, i, tmpCol);
+		gsl_matrix_get_col(tmpRow, work->Q, i);
+		gsl_matrix_set_col(V, i, tmpRow);
+		gsl_matrix_set(SigmaInv, i, i, 1 / gsl_vector_get(work->S, i));
+	}
+
+	// Model computations
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, V, SigmaInv, 0,
+			VSigmaInv);
+	gsl_blas_dgemv(CblasTrans, 1.0, U, y, 0, UTy);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, VSigmaInv, UTy, 0, beta);
+
+	// Residuals
+	gsl_blas_dgemv(CblasNoTrans, 1.0, X, beta, 0, yHat);
+	gsl_vector_memcpy(residuals, y);
+	gsl_vector_sub(residuals, yHat);
+
+	// Variance-Covariance matrix
+	*chisq = gsl_stats_tss(residuals->data, residuals->stride,
+			residuals->size);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, *chisq, VSigmaInv,
+			SigmaInvVT, 0, varBeta);
+	gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, SigmaInv, V, 0,
+			SigmaInvVT);
+
+	// Free up memory
+	gsl_vector_free(UTy);
+	gsl_vector_free(yHat);
+	gsl_vector_free(residuals);
+	gsl_vector_free(tmpRow);
+	gsl_vector_free(tmpCol);
+	gsl_matrix_free(U);
+	gsl_matrix_free(SigmaInv);
+	gsl_matrix_free(VSigmaInv);
+	gsl_matrix_free(SigmaInvVT);
+	gsl_matrix_free(V);
+	gsl_multifit_linear_free(work);
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	// Command-line options
@@ -27,7 +105,6 @@ int main(int argc, char *argv[])
 	modelConfigType * config;
 
 	// Model variables
-	size_t rank;
 	int nrow;
 	int ncol;
 	int testRows;
@@ -164,9 +241,8 @@ int main(int argc, char *argv[])
 	}
 
 	// Fit the model
-	if (gsl_multifit_linear_tsvd(dataMatrix, response,
-				config->svdTolerance, coef, covMatrix, &chisq,
-				&rank, work)) {
+	if (fit_svd_model(config->svdTolerance, dataMatrix, response,
+		coef, covMatrix, &chisq)) {
 		return 1;
 	}
 
