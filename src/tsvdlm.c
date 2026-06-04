@@ -73,10 +73,10 @@ int fit_svd_model(double tol, gsl_matrix * X, gsl_vector * y,
 	// Variance-Covariance matrix
 	*chisq = gsl_stats_tss(residuals->data, residuals->stride,
 			residuals->size);
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, *chisq, VSigmaInv,
-			SigmaInvVT, 0, varBeta);
 	gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, SigmaInv, V, 0,
 			SigmaInvVT);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, *chisq, VSigmaInv,
+			SigmaInvVT, 0, varBeta);
 
 	// Free up memory
 	gsl_vector_free(UTy);
