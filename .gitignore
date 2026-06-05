@@ -7,3 +7,4 @@ runtests
 *.gcno
 *.gcda
 tsvdlm
+plm
