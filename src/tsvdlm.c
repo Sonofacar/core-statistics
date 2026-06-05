@@ -21,7 +21,7 @@ int fit_svd_model(double tol, gsl_matrix * X, gsl_vector * y,
 		gsl_vector * beta, gsl_matrix * varBeta, double * chisq)
 {
 	size_t rank;
-	gsl_vector * UTy;
+	double s;
 	gsl_vector * yHat;
 	gsl_vector * residuals;
 	gsl_vector * tmpCol;
@@ -29,8 +29,13 @@ int fit_svd_model(double tol, gsl_matrix * X, gsl_vector * y,
 	gsl_matrix * U;
 	gsl_matrix * V;
 	gsl_matrix * SigmaInv;
-	gsl_matrix * VSigmaInv;
-	gsl_matrix * SigmaInvVT;
+	gsl_matrix * DInv;
+	gsl_matrix * DInvV;
+	gsl_matrix * SigmaInvUT;
+	gsl_matrix * SigmaInvInv;
+	gsl_matrix * VTDInv;
+	gsl_matrix * intOne;
+	gsl_matrix * intTwo;
 	gsl_multifit_linear_workspace * work;
 
 	// Perform BSVD
@@ -42,11 +47,15 @@ int fit_svd_model(double tol, gsl_matrix * X, gsl_vector * y,
 
 	// Set up matrices
 	U = gsl_matrix_alloc(X->size1, rank);		// A
-	SigmaInv = gsl_matrix_calloc(rank, rank);	// S^-1
+	SigmaInv = gsl_matrix_calloc(rank, rank);	// S^{-1}
 	V = gsl_matrix_alloc(X->size2, rank);		// Q
-	VSigmaInv = gsl_matrix_calloc(X->size2, rank);
-	SigmaInvVT = gsl_matrix_calloc(rank, X->size2);
-	UTy = gsl_vector_alloc(rank);
+	DInv = gsl_matrix_calloc(X->size2, X->size2);	// D^{-1}
+	DInvV = gsl_matrix_alloc(X->size2, rank);
+	SigmaInvUT = gsl_matrix_alloc(rank, X->size1);
+	SigmaInvInv = gsl_matrix_calloc(rank, rank);
+	VTDInv = gsl_matrix_alloc(rank, X->size2);
+	intOne = gsl_matrix_alloc(X->size2, X->size1);
+	intTwo = gsl_matrix_alloc(X->size2, rank);
 	yHat = gsl_vector_alloc(y->size);
 	residuals = gsl_vector_alloc(y->size);
 	tmpCol = gsl_vector_alloc(X->size1);
@@ -56,14 +65,21 @@ int fit_svd_model(double tol, gsl_matrix * X, gsl_vector * y,
 		gsl_matrix_set_col(U, i, tmpCol);
 		gsl_matrix_get_col(tmpRow, work->Q, i);
 		gsl_matrix_set_col(V, i, tmpRow);
-		gsl_matrix_set(SigmaInv, i, i, 1 / gsl_vector_get(work->S, i));
+		s = gsl_vector_get(work->S, i);
+		gsl_matrix_set(SigmaInv, i, i, 1 / s);
+		gsl_matrix_set(SigmaInvInv, i, i, 1 / (s * s));
+	}
+	for (size_t i = 0; i < X->size2; i++) {
+		gsl_matrix_set(DInv, i, i, 1 / gsl_vector_get(work->D, i));
 	}
 
-	// Model computations
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, V, SigmaInv, 0,
-			VSigmaInv);
-	gsl_blas_dgemv(CblasTrans, 1.0, U, y, 0, UTy);
-	gsl_blas_dgemv(CblasNoTrans, 1.0, VSigmaInv, UTy, 0, beta);
+	// Model computations: D^{-1} V \Sigma^{-1} U^T y
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, DInv, V, 0, DInvV);
+	gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, SigmaInv, U, 0,
+			SigmaInvUT);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, DInvV, SigmaInvUT, 0,
+			intOne);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, intOne, y, 0, beta);
 
 	// Residuals
 	gsl_blas_dgemv(CblasNoTrans, 1.0, X, beta, 0, yHat);
@@ -71,24 +87,32 @@ int fit_svd_model(double tol, gsl_matrix * X, gsl_vector * y,
 	gsl_vector_sub(residuals, yHat);
 
 	// Variance-Covariance matrix
+	// \hat\sigma^2 = RSS (Residual Sum of Squares)
+	// \hat\sigma^2 D^{-1} V \Sigma^{-2} V^T D^{-1}
 	*chisq = gsl_stats_tss(residuals->data, residuals->stride,
 			residuals->size);
-	gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, SigmaInv, V, 0,
-			SigmaInvVT);
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, *chisq, VSigmaInv,
-			SigmaInvVT, 0, varBeta);
+	gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, V, DInv, 0,
+			VTDInv);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, DInvV, SigmaInvInv, 0,
+			intTwo);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, *chisq, intTwo, VTDInv, 0,
+			varBeta);
 
 	// Free up memory
-	gsl_vector_free(UTy);
 	gsl_vector_free(yHat);
 	gsl_vector_free(residuals);
 	gsl_vector_free(tmpRow);
 	gsl_vector_free(tmpCol);
 	gsl_matrix_free(U);
 	gsl_matrix_free(SigmaInv);
-	gsl_matrix_free(VSigmaInv);
-	gsl_matrix_free(SigmaInvVT);
+	gsl_matrix_free(DInv);
 	gsl_matrix_free(V);
+	gsl_matrix_free(DInvV);
+	gsl_matrix_free(SigmaInvUT);
+	gsl_matrix_free(SigmaInvInv);
+	gsl_matrix_free(VTDInv);
+	gsl_matrix_free(intOne);
+	gsl_matrix_free(intTwo);
 	gsl_multifit_linear_free(work);
 
 	return 0;
