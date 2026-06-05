@@ -15,10 +15,16 @@
 	"from\n" \
 	"\tinput data, and a lower value more closely resembles standard " \
 	"linear\n" \
-	"\tregression.\n"
+	"\tregression.\n\n" \
+	"\t-u, --unbalance\n\n" \
+	"\tDo not balance magnitude of data matrix prior to SVD " \
+	"decomposition. By\n" \
+	"\tdefault, columns are scaled to similar magnitudes to improve " \
+	"accuracy.\n"
 
 int fit_svd_model(double tol, gsl_matrix * X, gsl_vector * y,
-		gsl_vector * beta, gsl_matrix * varBeta, double * chisq)
+		gsl_vector * beta, gsl_matrix * varBeta, double * chisq,
+		bool balance)
 {
 	size_t rank;
 	double s;
@@ -38,10 +44,16 @@ int fit_svd_model(double tol, gsl_matrix * X, gsl_vector * y,
 	gsl_matrix * intTwo;
 	gsl_multifit_linear_workspace * work;
 
-	// Perform BSVD
+	// Perform BSVD or standard SVD
 	work = gsl_multifit_linear_alloc(X->size1, X->size2);
-	if (gsl_multifit_linear_bsvd(X, work)) {
-		return 1;
+	if (balance) {
+		if (gsl_multifit_linear_bsvd(X, work)) {
+			return 1;
+		}
+	} else {
+		if (gsl_multifit_linear_svd(X, work)) {
+			return 1;
+		}
 	}
 	rank = gsl_multifit_linear_rank(tol, work);
 
@@ -124,11 +136,14 @@ int main(int argc, char *argv[])
 	const struct option commandOptions[] = {
 		COMMON_OPTIONS,
 		{"tolerance", required_argument, NULL, 'p'},
+		{"unbalance", no_argument, NULL, 'u'},
 	};
 	int opt;
 	modelConfigType * config;
 
 	// Model variables
+	bool balance;
+	double tolerance;
 	int nrow;
 	int ncol;
 	int testRows;
@@ -148,23 +163,27 @@ int main(int argc, char *argv[])
 
 	config = malloc(sizeof(modelConfigType));
 	config->input = stdin;
-	while ((opt = getopt_long_only(argc, argv, COMMON_OPTION_STRING "p:",
+	balance = true;
+	while ((opt = getopt_long_only(argc, argv, COMMON_OPTION_STRING "p:u",
 					commandOptions, NULL)) != -1) {
 		if (parse_args(opt, config, LM_HELP_MESSAGE ADDITIONAL_HELP)) {
 			return 1;
 		}
 		if (opt == 'p') {
-			sscanf(optarg, "%lf", &config->svdTolerance);
-			if ((0 >= config->svdTolerance) ||
-					(1 <= config->svdTolerance)) {
+			sscanf(optarg, "%lf", &tolerance);
+			if ((0 >= tolerance) ||
+					(1 <= tolerance)) {
 				fprintf(stderr, "Tolerance value must be "
 						"between 0 and 1.\n");
 				return 1;
 			}
 		}
+		if (opt == 'u') {
+			balance = false;
+		}
 	}
 
-	if (!config->svdTolerance) {
+	if (!tolerance) {
 		fprintf(stderr, "Must set a tolerance value "
 				"(argument `-p`).\n");
 		return 1;
@@ -265,8 +284,8 @@ int main(int argc, char *argv[])
 	}
 
 	// Fit the model
-	if (fit_svd_model(config->svdTolerance, dataMatrix, response,
-		coef, covMatrix, &chisq)) {
+	if (fit_svd_model(tolerance, dataMatrix, response, coef, covMatrix,
+				&chisq, balance)) {
 		return 1;
 	}
 
