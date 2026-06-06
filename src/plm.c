@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 		}
 		if (opt == 'p') {
 			sscanf(optarg, "%lf", &tmpLambda);
-			if (0 >= tmpLambda) {
+			if (0 > tmpLambda) {
 				fprintf(stderr, "Lambda value must be "
 						"greater than or equal to "
 						"0.\n");
