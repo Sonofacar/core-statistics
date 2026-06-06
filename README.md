@@ -31,8 +31,10 @@ To-do list:
 		- [X] train/test sets?
 		- [X] transformation of response variable
 		- [X] category encoding type
-- [ ] tsvdlm (truncated SVD linear model)
+- [X] tsvdlm (truncated SVD linear model)
 - [ ] plm (penalized linear model)
+    - [ ] (Maybe) add debiased estimators w/ wald test for p-values
 - [ ] step (Model stepping algorithm)
+    - [ ] optional parallel execution model steps
 - [ ] norm (normalize column/set of columns)
 - [ ] filter (tool to filter rows)
