@@ -196,11 +196,19 @@ void print_coefficients(gsl_vector * coef, gsl_vector * pVals, char ** names,
 		int ncol)
 {
 	printf("Coefficients:\n");
-	printf("%17.17s\tValue\t\tP-Value\n", "Name");
-	for (int i = 0; i <= ncol; i++) {
-		printf("%17.17s\t", names[i]);
-		printf("%9.9g\t", gsl_vector_get(coef, i));
-		printf("%9.9g\n", gsl_vector_get(pVals, i));
+	if (pVals) {
+		printf("%17.17s\tValue\t\tP-Value\n", "Name");
+		for (int i = 0; i <= ncol; i++) {
+			printf("%17.17s\t", names[i]);
+			printf("%9.9g\t", gsl_vector_get(coef, i));
+			printf("%9.9g\n", gsl_vector_get(pVals, i));
+		}
+	} else {
+		printf("%17.17s\tValue\n", "Name");
+		for (int i = 0; i <= ncol; i++) {
+			printf("%17.17s\t", names[i]);
+			printf("%9.9g\n", gsl_vector_get(coef, i));
+		}
 	}
 }
 
@@ -242,7 +250,7 @@ double diagnostics(diagnoseType type, double chisq, gsl_vector * response,
 	int nrow = response->size;
 	double value = 0;
 	double tss = 0;
-	gsl_vector * pVals;
+	gsl_vector * pVals = NULL;
 	gsl_vector * testResponse;
 	gsl_vector * testResid;
 	gsl_matrix * testMatrix;
@@ -268,9 +276,11 @@ double diagnostics(diagnoseType type, double chisq, gsl_vector * response,
 		case ALL:
 			double aic, bic, rsq, adjRSQ, f;
 			// We just print things out here
-			pVals = gsl_vector_alloc(ncol + 1);
-			coefficient_p_values(pVals, covMatrix, coef, ncol + 1,
-					nrow - ncol - 1);
+			if (covMatrix) {
+				pVals = gsl_vector_alloc(ncol + 1);
+				coefficient_p_values(pVals, covMatrix, coef,
+						ncol + 1, nrow - ncol - 1);
+			}
 			aic = nrow * log(log(2 * M_PI) + 1 + chisq / nrow) +
 				2 * ncol;
 			bic = nrow * log(log(2 * M_PI) + 1 + chisq / nrow) +
@@ -284,7 +294,8 @@ double diagnostics(diagnoseType type, double chisq, gsl_vector * response,
 			print_coefficients(coef, pVals, colNames, ncol);
 			printf("\n");
 			print_diagnostics(rsq, adjRSQ, f, aic, bic);
-			if (modelName) save_model(modelName, coef, colNames, ncol);
+			if (modelName) save_model(modelName, coef, colNames,
+					ncol);
 			return 0; // Early return to avoid printing
 			break;
 

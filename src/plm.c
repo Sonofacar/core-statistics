@@ -38,7 +38,6 @@ int main(int argc, char *argv[])
 	gsl_vector * response;
 	gsl_vector * coef;
 	gsl_matrix * dataMatrix;
-	gsl_matrix * covMatrix;
 	gsl_multifit_linear_workspace * work;
 
 	config = malloc(sizeof(modelConfigType));
@@ -156,7 +155,6 @@ int main(int argc, char *argv[])
 	// Allocate remaining data
 	work = gsl_multifit_linear_alloc(nrow, ncol);
 	coef = gsl_vector_calloc(ncol);
-	covMatrix = gsl_matrix_calloc(ncol, ncol);
 
 	// Perform transformation if necessary
 	switch(config->transformation) {
@@ -200,11 +198,10 @@ int main(int argc, char *argv[])
 	gsl_multifit_linear_free(work);
 
 	// Print diagnostics
-	diagnostics(config->diagnostic, chisq, response, coef, covMatrix,
-			colNames, testRows, testData, config->name);
+	diagnostics(config->diagnostic, chisq, response, coef, NULL, colNames,
+			testRows, testData, config->name);
 
 	// Free memory
-	gsl_matrix_free(covMatrix);
 	column_free(testData);
 	free(colNames);
 	free(config);
