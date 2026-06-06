@@ -4,6 +4,11 @@
 #include "core.h"
 #include "model_utils.h"
 
+#define LM_HELP_INTRO \
+	"Usage: lm [-h] [-i file] [-n name] [TRANSFORM] [ENCODING] " \
+		"[DIAGNOSTIC]\n" \
+	"Perform linear regression from the command line.\n\n"
+
 int main(int argc, char *argv[])
 {
 	// Command-line options
@@ -35,7 +40,7 @@ int main(int argc, char *argv[])
 	config->input = stdin;
 	while ((opt = getopt_long_only(argc, argv, COMMON_OPTION_STRING,
 					commandOptions, NULL)) != -1) {
-		if (parse_args(opt, config, LM_HELP_MESSAGE)) {
+		if (parse_args(opt, config, LM_HELP_INTRO LM_HELP_MESSAGE)) {
 			return 1;
 		}
 	}

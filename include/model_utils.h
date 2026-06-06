@@ -49,9 +49,6 @@ double diagnostics(diagnoseType type, double chisq, gsl_vector * response,
 		int testRows, dataColumn * testData, char * modelName);
 
 #define LM_HELP_MESSAGE \
-	"Usage: lm [-h] [-i file] [-n name] [TRANSFORM] [ENCODING] " \
-		"[DIAGNOSTIC]\n" \
-	"Perform linear regression from the command line.\n\n" \
 	"OPTIONS:\n" \
 	"\t-i, --input\tSpecify input file. If not given, stdin will be " \
 		"used.\n" \

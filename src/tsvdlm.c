@@ -6,21 +6,28 @@
 #include "debug.h"
 #include "model_utils.h"
 
+#define TSVD_HELP_INTRO \
+	"Usage: tsvdlm [-h] [-i file] [-n name] [TRANSFORM] [ENCODING] " \
+		"[DIAGNOSTIC] \\\n\t\t[UNIQUE]\n\n" \
+	"Perform linear regression using the truncated singular value " \
+		"decomposition\n" \
+	"algorithm to account for multicollinearity.\n\n"
+
 #define ADDITIONAL_HELP \
-	"\nUNIQUE OPTIONS:\n" \
+	"\nUNIQUE:\n" \
 	"\t-p, --tolerance <number between 0 and 1>\n\n" \
 	"\tThis value dictates the tolerance value for SVD linear " \
-	"regression. Put\n" \
+		"regression. Put\n" \
 	"\tsimply, a higher value means more information will be removed " \
-	"from\n" \
+		"from\n" \
 	"\tinput data, and a lower value more closely resembles standard " \
-	"linear\n" \
+		"linear\n" \
 	"\tregression.\n\n" \
 	"\t-u, --unbalance\n\n" \
 	"\tDo not balance magnitude of data matrix prior to SVD " \
-	"decomposition. By\n" \
+		"decomposition. By\n" \
 	"\tdefault, columns are scaled to similar magnitudes to improve " \
-	"accuracy.\n"
+		"accuracy.\n"
 
 int fit_svd_model(double tol, gsl_matrix * X, gsl_vector * y,
 		gsl_vector * beta, gsl_matrix * varBeta, double * chisq,
@@ -166,7 +173,8 @@ int main(int argc, char *argv[])
 	balance = true;
 	while ((opt = getopt_long_only(argc, argv, COMMON_OPTION_STRING "p:u",
 					commandOptions, NULL)) != -1) {
-		if (parse_args(opt, config, LM_HELP_MESSAGE ADDITIONAL_HELP)) {
+		if (parse_args(opt, config, TSVD_HELP_INTRO LM_HELP_MESSAGE
+					ADDITIONAL_HELP)) {
 			return 1;
 		}
 		if (opt == 'p') {

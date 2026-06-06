@@ -4,6 +4,36 @@
 #include "core.h"
 #include "model_utils.h"
 
+#define PLM_HELP_INTRO \
+	"Usage: plm [-h] [-i file] [-n name] [TRANSFORM] [ENCODING] " \
+		"[DIAGNOSTIC] \\\n\t\t[UNIQUE]\n\n" \
+	"Perform penalized linear regression using the ridge regression " \
+		"method. This\n" \
+	"method may improve predictions by introducing a slight bias that " \
+		"can lead to a\n" \
+	"simpler model.\n\n"
+
+#define PLM_UNIQUE_HELP \
+	"UNIQUE:\n" \
+	"\t-p, --lambda <number greater than or equal to 0>\n\n" \
+	"\tManually set the lambda value. Higher values increase penalties; " \
+		"too\n" \
+	"\thigh may be overly biased and too low may be too similar to " \
+		"standard\n" \
+	"\tlinear regression. A value of exactly 0 will be exactly the same " \
+		"as\n" \
+	"\tlinear regression.\n\n" \
+	"\t-g, --gcv-curve\n\n" \
+	"\tAutomatically choose lambda via the GCV (Generalized Cross " \
+		"Validation)\n" \
+	"\tcurve method. This is one method which may find a value for " \
+		"lambda\n" \
+	"\twhich optimally reduces the model residuals.\n\n" \
+	"\t-c, --l-curve\n\n" \
+	"\tAutomatically choose lambda via the L-curve method which attempts " \
+		"to\n" \
+	"\tfind the best compromising value of lambda.\n" \
+
 #define MULT_LAMBDAS "Multiple lambda-related options set; only set one of " \
 	"lambda, gcv-curve, and l-curve."
 
@@ -44,7 +74,8 @@ int main(int argc, char *argv[])
 	config->input = stdin;
 	while ((opt = getopt_long_only(argc, argv, COMMON_OPTION_STRING "p:gc",
 					commandOptions, NULL)) != -1) {
-		if (parse_args(opt, config, LM_HELP_MESSAGE)) {
+		if (parse_args(opt, config, PLM_HELP_INTRO LM_HELP_MESSAGE
+					PLM_UNIQUE_HELP)) {
 			return 1;
 		}
 		if (opt == 'p') {
