@@ -142,8 +142,8 @@ int main(int argc, char *argv[])
 	// Command-line options
 	const struct option commandOptions[] = {
 		COMMON_OPTIONS,
-		{"tolerance", required_argument, NULL, 'p'},
-		{"unbalance", no_argument, NULL, 'u'},
+		{"tolerance",	required_argument,	NULL, 'p'},
+		{"unbalance",	no_argument,		NULL, 'u'},
 	};
 	int opt;
 	modelConfigType * config;

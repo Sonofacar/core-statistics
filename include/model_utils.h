@@ -12,22 +12,22 @@ typedef struct {
 // required_argument: 1
 // optional_argument: 2
 #define COMMON_OPTIONS \
-	{"help", 0, NULL, 'h'}, \
-	{"input", 1, NULL, 'i'}, \
-	{"dummy", 0, NULL, 'd'}, \
-	{"target-mean", 0, NULL, 't'}, \
-	{"target-median", 0, NULL, 'T'}, \
-	{"log", 0, NULL, 'l'}, \
-	{"log-offset", 0, NULL, 'L'}, \
-	{"name", 1, NULL, 'n'}, \
-	{"test-ratio", 1, NULL, 's'}, \
-	{"aic", 0, NULL, 'a'}, \
-	{"bic", 0, NULL, 'b'}, \
-	{"r-squared", 0, NULL, 'r'}, \
-	{"adjusted-r-squared", 0, NULL, 'R'}, \
-	{"f-statistic", 0, NULL, 'f'}, \
-	{"rmse", 0, NULL, 'm'}, \
-	{"mae", 0, NULL, 'M'}
+	{"help",		no_argument,		NULL, 'h'}, \
+	{"input",		required_argument,	NULL, 'i'}, \
+	{"dummy",		no_argument,		NULL, 'd'}, \
+	{"target-mean",		no_argument,		NULL, 't'}, \
+	{"target-median",	no_argument,		NULL, 'T'}, \
+	{"log",			no_argument,		NULL, 'l'}, \
+	{"log-offset",		no_argument,		NULL, 'L'}, \
+	{"name",		required_argument,	NULL, 'n'}, \
+	{"test-ratio",		required_argument,	NULL, 's'}, \
+	{"aic",			no_argument,		NULL, 'a'}, \
+	{"bic",			no_argument,		NULL, 'b'}, \
+	{"r-squared",		no_argument,		NULL, 'r'}, \
+	{"adjusted-r-squared",	no_argument,		NULL, 'R'}, \
+	{"f-statistic",		no_argument,		NULL, 'f'}, \
+	{"rmse",		no_argument,		NULL, 'm'}, \
+	{"mae",			no_argument,		NULL, 'M'}
 
 #define COMMON_OPTION_STRING ":hi:dtTlLn:s:abrRfmM"
 

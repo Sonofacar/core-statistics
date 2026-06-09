@@ -42,9 +42,9 @@ int main(int argc, char *argv[])
 	// Command-line options
 	const struct option commandOptions[] = {
 		COMMON_OPTIONS,
-		{"lambda", required_argument, NULL, 'p'}, \
-		{"gcv-curve", no_argument, NULL, 'g'}, \
-		{"l-curve", no_argument, NULL, 'c'}, \
+		{"lambda",	required_argument,	NULL, 'p'}, \
+		{"gcv-curve",	no_argument,		NULL, 'g'}, \
+		{"l-curve",	no_argument,		NULL, 'c'}, \
 	};
 	int opt;
 	modelConfigType * config;
