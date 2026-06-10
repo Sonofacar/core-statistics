@@ -27,7 +27,9 @@ dataColumn * column_alloc(int n, char name[])
 	if (!output) {
 		return NULL;
 	}
+	output->n = n;
 	output->name = strdup(name);
+	output->rawValues = calloc(n, sizeof(char *));
 	output->vector = gsl_vector_alloc(n);
 	if (!output->vector) {
 		free(output->name);
@@ -45,21 +47,26 @@ void column_free(dataColumn * data)
 	if (data) {
 		if (data->name) {
 			free(data->name);
-			data->name = NULL;
+		}
+
+		if (data->rawValues) {
+			for (int i = 0; i < data->n; i++) {
+				if (data->rawValues[i]) {
+					free(data->rawValues[i]);
+				}
+			}
+			free(data->rawValues);
 		}
 
 		if (data->vector) {
 			gsl_vector_free(data->vector);
-			data->vector = NULL;
 		}
 
 		if (data->nextColumn) {
 			column_free(data->nextColumn);
-			data->nextColumn = NULL;
 		}
 
 		free(data);
-		data = NULL;
 	}
 }
 
@@ -114,6 +121,7 @@ void translate_row_value(rowValue * row, dataColumn * column, int n)
 		perror("Mismatch in column types.");
 	}
 
+	column->rawValues[n - 1] = strdup(row->value);
 	if (column->type == TYPE_DOUBLE) {
 		// Doubles immediately set values
 		sscanf(row->value, "%lf", &value);
@@ -387,5 +395,32 @@ void transform(gsl_vector * v, double (*func)(double), int len)
 	for (int i = 0; i < len; i++) {
 		p = gsl_vector_ptr(v, i);
 		*p = (*func)(*p);
+	}
+}
+
+
+void print_columns(dataColumn * columnHead, FILE * output)
+{
+	int nrow = columnHead->vector->size;
+	dataColumn * colPtr;
+
+	// Print column names
+	fprintf(output, "%s", columnHead->name);
+	colPtr = columnHead->nextColumn;
+	while (colPtr) {
+		fprintf(output, ",%s", colPtr->name);
+		colPtr = colPtr->nextColumn;
+	}
+	fprintf(output, "\n");
+
+	// Print all values
+	for (int i = 0; i < nrow; i++) {
+		colPtr = columnHead->nextColumn;
+		fprintf(output, "%s", colPtr->rawValues[i]);
+		while (colPtr) {
+			fprintf(output, ",%s", colPtr->rawValues[i]);
+			colPtr = colPtr->nextColumn;
+		}
+		fprintf(output, "\n");
 	}
 }

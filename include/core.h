@@ -46,10 +46,12 @@ typedef enum {
 } transformType;
 
 typedef struct dataColumn {
+	int n;
 	char * name;
 	valueType type;
-	gsl_vector * vector;
+	char ** rawValues;
 	char ** to_encode;
+	gsl_vector * vector;
 	struct dataColumn * nextColumn;
 } dataColumn;
 
@@ -129,3 +131,5 @@ double log_offset(double d);
 double exp_offset(double d);
 
 void transform(gsl_vector * v, double (*func)(double), int len);
+
+void print_columns(dataColumn * columnHead, FILE * output);

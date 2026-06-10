@@ -89,7 +89,7 @@ static void test_column_free(void **state)
 	will_return_always(__wrap_malloc, false);
 	will_return_maybe(__wrap_gsl_vector_alloc, false);
 	dataColumn * data = column_alloc(0, "");
-	expect_function_calls(__wrap_free, 2);
+	expect_function_calls(__wrap_free, 3 + data->vector->size);
 	column_free(data);
 }
 
@@ -105,7 +105,7 @@ static void test_column_free_recursive(void **state)
 		head->nextColumn = column_alloc(0, "");
 		head = head->nextColumn;
 	}
-	expect_function_calls(__wrap_free, 2 * n);
+	expect_function_calls(__wrap_free, n * (3 + data->vector->size));
 	column_free(data);
 }
 
@@ -116,10 +116,10 @@ static void test_column_free_large_recursive(void **state)
 	int n = 100000;
 	will_return_always(__wrap_malloc, false);
 	will_return_maybe(__wrap_gsl_vector_alloc, false);
-	dataColumn * data = column_alloc(p, "");
+	dataColumn * data = column_alloc(n, "");
 	dataColumn * head = data;
-	for (int i = 1; i < n; i++) {
-		head->nextColumn = column_alloc(p, "");
+	for (int i = 1; i < p; i++) {
+		head->nextColumn = column_alloc(n, "");
 		head = head->nextColumn;
 	}
 	ignore_function_calls(__wrap_free);
@@ -142,14 +142,14 @@ static void test_column_free_partial_null(void **state)
 	dataColumn * data = column_alloc(0, "");
 	__real_free(data->name);
 	data->name = NULL;
-	expect_function_calls(__wrap_free, 1);
+	expect_function_calls(__wrap_free, 2);
 	column_free(data);
 
 	// vector
 	data = column_alloc(0, "");
 	__real_free(data->vector);
 	data->vector = NULL;
-	expect_function_calls(__wrap_free, 2);
+	expect_function_calls(__wrap_free, 3);
 	column_free(data);
 }
 
@@ -553,6 +553,41 @@ static void test_log_offset_transform(void ** state)
 	assert_int_equal(a, b);
 }
 
+// print_columns
+static void test_print_columns(void ** state)
+{
+	(void) state;
+	int nrow;
+	char * line;
+	char ** lines = NULL;
+	size_t len;
+	dataColumn * columnHead;
+	encodeData * encoding;
+        char * input_str = "a,b,c\n1,2,3\n4,5,6\n7,8,9\n";
+	FILE * input = fmemopen(input_str, strlen(input_str), "r");
+	FILE * output = fmemopen(NULL, strlen(input_str), "r+");
+
+	ignore_function_calls(__wrap_free);
+	will_return_always(__wrap_malloc, false);
+	will_return_maybe(__wrap_gsl_vector_alloc, false);
+	nrow = read_rows(&lines, input);
+	columnHead = column_alloc(nrow, "");
+	read_columns(columnHead, lines, NULL, nrow, &encoding);
+
+	print_columns(columnHead, output);
+	rewind(input);
+	getline(&line, &len, input);
+	assert_string_equal(line, "a,b,c\n");
+	getline(&line, &len, input);
+	assert_string_equal(line, "1,2,3\n");
+	getline(&line, &len, input);
+	assert_string_equal(line, "4,5,6\n");
+	getline(&line, &len, input);
+	assert_string_equal(line, "7,8,9\n");
+
+	column_free(columnHead);
+}
+
 int main(void) {
 	const struct CMUnitTest column_alloc_test[] = {
 		cmocka_unit_test(test_column_alloc_not_null),
@@ -603,6 +638,9 @@ int main(void) {
 	const struct CMUnitTest offset_transform_test[] = {
 		cmocka_unit_test(test_log_offset_transform),
 	};
+	const struct CMUnitTest print_columns_test[] = {
+		cmocka_unit_test(test_print_columns),
+	};
  
 	return cmocka_run_group_tests(column_alloc_test, NULL, NULL) &
 		cmocka_run_group_tests(column_free_test, NULL, NULL) &
@@ -613,5 +651,6 @@ int main(void) {
 		cmocka_run_group_tests(read_columns_test, NULL, NULL) &
 		cmocka_run_group_tests(includes_int_test, NULL, NULL) &
 		cmocka_run_group_tests(test_split_test, NULL, NULL) &
-		cmocka_run_group_tests(offset_transform_test, NULL, NULL);
+		cmocka_run_group_tests(offset_transform_test, NULL, NULL) &
+		cmocka_run_group_tests(print_columns_test, NULL, NULL);
 }
