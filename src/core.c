@@ -415,8 +415,9 @@ void print_columns(dataColumn * columnHead, FILE * output)
 
 	// Print all values
 	for (int i = 0; i < nrow; i++) {
-		colPtr = columnHead->nextColumn;
+		colPtr = columnHead;
 		fprintf(output, "%s", colPtr->rawValues[i]);
+		colPtr = colPtr->nextColumn;
 		while (colPtr) {
 			fprintf(output, ",%s", colPtr->rawValues[i]);
 			colPtr = colPtr->nextColumn;
