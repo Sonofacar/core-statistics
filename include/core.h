@@ -94,6 +94,8 @@ void column_free(dataColumn * data);
 
 valueType detect_type(const char *value);
 
+bool is_string(const char *value);
+
 void translate_row_value(rowValue * row, dataColumn * column, int n);
 
 int process_row(dataColumn * data, size_t n, int row, char * line,
@@ -133,3 +135,5 @@ double exp_offset(double d);
 void transform(gsl_vector * v, double (*func)(double), int len);
 
 void print_columns(dataColumn * columnHead, FILE * output);
+
+int find_column_index(dataColumn * columns[], int n, const char * name);

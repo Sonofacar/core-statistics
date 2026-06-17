@@ -8,3 +8,4 @@ runtests
 *.gcda
 tsvdlm
 plm
+select

@@ -107,6 +107,27 @@ valueType detect_type(const char *value)
 	return TYPE_DOUBLE;
 }
 
+bool is_string(const char *value)
+{
+	bool has_digit = false;
+	const char *p = value;
+	const char *P = p + strlen(p) - 1;
+
+	while (*p) {
+		if (isdigit(*p)) {
+			has_digit = true;
+		} else if (p == P) {
+			break;
+		} else {
+			return true;
+		}
+		p++;
+	}
+
+	if (!has_digit) return true;
+	return false;
+}
+
 void translate_row_value(rowValue * row, dataColumn * column, int n)
 {
 	double value;
@@ -424,4 +445,14 @@ void print_columns(dataColumn * columnHead, FILE * output)
 		}
 		fprintf(output, "\n");
 	}
+}
+
+int find_column_index(dataColumn * columns[], int n, const char * name)
+{
+	for (int i = 0; i < n; i++) {
+		if (!strcmp(name, columns[i]->name)) {
+			return i;
+		}
+	}
+	return -1;
 }
